@@ -115,7 +115,7 @@ README.md                    This file
 
 ## License
 
-This project is open source. Choose a license that fits your goals (MIT is a common, permissive default) and add a `LICENSE` file to the repo.
+Released under the [MIT License](LICENSE). You're free to use, modify, share, and remix the game — just keep the copyright notice in any copies or substantial portions you distribute.
 
 ## Contributing
 
