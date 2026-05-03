@@ -4,6 +4,12 @@ A browser-based driving game built for young kids. Steer a trash truck through t
 
 The whole game is a single self-contained HTML file with no dependencies and no build step.
 
+## Play Now
+
+**[https://engfranco.github.io/catch-the-garbage/](https://engfranco.github.io/catch-the-garbage/)**
+
+Just open the link in any modern browser — desktop, tablet, or phone — and start playing. Nothing to install.
+
 ![Start screen](screenshots/start.png)
 
 ![Gameplay](screenshots/gameplay.png)
@@ -28,57 +34,63 @@ The whole game is a single self-contained HTML file with no dependencies and no 
 - Avoid everything else — three hits and the game ends
 - Every ~22 seconds, a level transition takes you to a new planet
 
-## Running at Home
+## Adding to an iPad's Home Screen
 
-The simplest way to try the game is to open `index.html` directly in any modern browser — just double-click the file and it loads in your default browser. That works fine for desktop play.
+For the best experience on an iPad, install it as a fullscreen home-screen app:
 
-For tablet play (especially iPad with the "Add to Home Screen" feature), you'll need a tiny local web server, because iOS only offers Add to Home Screen for real `http(s)://` URLs and not for files opened from the Files app.
+1. Open [https://engfranco.github.io/catch-the-garbage/](https://engfranco.github.io/catch-the-garbage/) in Safari on your iPad.
+2. Tap the **Share** button (the square with the up-arrow).
+3. Scroll down and tap **Add to Home Screen**.
+4. Confirm the name. A trash-truck icon appears on the home screen.
 
-### macOS (one-click)
+Tapping that icon launches the game fullscreen with no Safari address bar — it feels just like a real app, and it works whether you're at home or on the go.
 
-1. Clone or download this repo to your Mac.
-2. Make sure your iPad and Mac are on the same Wi-Fi network.
-3. Double-click `start-ipad-server.command` in Finder.
+## Running It Locally
 
-   The first time you run it, macOS may warn that it's from an unidentified developer. Right-click the file, choose **Open**, then confirm. After that, double-clicking works normally.
+You don't need to clone the repo to play, but you might want a local copy for offline play, development, or hosting on your own server.
 
-4. A Terminal window opens and prints a URL like `http://192.168.1.42:8000/`.
-5. Open that URL in Safari on your iPad.
-6. Tap the **Share** button → **Add to Home Screen** → confirm. The game now has its own icon on the home screen.
+### Quick local play
+
+Clone or download the repo and double-click `index.html` to open it in your default browser. That works for desktop play.
+
+For iPad "Add to Home Screen" using a local copy, you'll need to serve the file over `http(s)://` instead of `file://` (iOS only allows Add to Home Screen for real web URLs).
+
+### macOS (one-click local server)
+
+1. Make sure your iPad and Mac are on the same Wi-Fi network.
+2. Double-click `start-ipad-server.command` in Finder.
+
+   The first time you run it, macOS may warn that it's from an unidentified developer. Right-click the file, choose **Open**, then confirm.
+
+3. A Terminal window opens and prints a URL like `http://192.168.1.42:8000/`.
+4. Open that URL in Safari on your iPad. Tap **Share** → **Add to Home Screen**.
 
 Leave the Terminal window open while playing. Closing it stops the server.
 
 ### Windows
 
-1. Clone or download this repo.
-2. Open PowerShell or Command Prompt in the project folder.
-3. Run:
-   ```
-   python -m http.server 8000
-   ```
-   (If that fails, try `py -m http.server 8000`. You may need to install Python from python.org if you don't have it.)
-4. Find your PC's local IP: in PowerShell run `ipconfig` and look for the IPv4 address of your active adapter.
-5. On your iPad, open Safari and visit `http://YOUR-IP:8000/`.
-6. Share → Add to Home Screen.
+```
+python -m http.server 8000
+```
+
+Find your PC's IP via `ipconfig`, then visit `http://YOUR-IP:8000/` from the iPad.
 
 ### Linux
 
 ```
-cd path/to/Catch-the-garbage
 python3 -m http.server 8000
 ```
 
-Find your IP with `hostname -I` (or `ip addr`), then visit `http://YOUR-IP:8000/` from any device on your network.
+Find your IP with `hostname -I`, then visit `http://YOUR-IP:8000/` from any device on your network.
 
-## Hosting It Online
+## Hosting Your Own Copy
 
-If you'd like the game to work from anywhere — not just your home Wi-Fi — host the files somewhere with a real public URL. Free options that work well for a single-page game:
+This repo is set up to publish via GitHub Pages — fork it, enable Pages in **Settings → Pages → Deploy from a branch → main**, and you'll have your own playable URL at `https://your-username.github.io/your-repo-name/`.
 
-- **GitHub Pages** — Push this repo to GitHub, enable Pages in the repo's Settings → Pages, and the game will be served from `https://your-username.github.io/your-repo-name/`. Because the file is named `index.html`, the URL ends cleanly without a filename.
-- **tiiny.host** — Drag and drop the folder at https://tiiny.host, no account required, get an instant URL.
-- **Netlify Drop** — Drag the project folder onto https://app.netlify.com/drop. Free with a Netlify account.
+Other free hosts that work well for a single-page game:
 
-Once it's online via `https://`, the iOS Add to Home Screen flow works exactly the same way and the home-screen icon will continue to load even when your Mac is off.
+- **tiiny.host** — drag and drop the folder, no account required
+- **Netlify Drop** — drag the folder onto https://app.netlify.com/drop
 
 ## Browser Support
 
