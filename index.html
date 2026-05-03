@@ -1,0 +1,2120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Catch the Garbage!">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='30' fill='%2387CEEB'/><rect x='30' y='60' width='80' height='70' rx='8' fill='%2327ae60' stroke='%231e6b3a' stroke-width='4'/><rect x='110' y='80' width='40' height='50' rx='6' fill='%23e74c3c' stroke='%23922b1f' stroke-width='4'/><rect x='115' y='85' width='30' height='18' rx='3' fill='%2387CEEB'/><circle cx='50' cy='140' r='14' fill='%23222'/><circle cx='90' cy='140' r='14' fill='%23222'/><circle cx='135' cy='140' r='14' fill='%23222'/></svg>">
+<title>Catch the Garbage!</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  html, body {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', system-ui, sans-serif;
+    background: #1a1a2e;
+    /* Use full screen including iOS notches */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  #game {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    cursor: pointer;
+    touch-action: none;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .ui {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 14px 20px;
+    pointer-events: none;
+    z-index: 5;
+    gap: 10px;
+  }
+  .pill {
+    background: rgba(255,255,255,0.92);
+    border: 4px solid #2c3e50;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: clamp(14px, 3vw, 22px);
+    font-weight: bold;
+    color: #2c3e50;
+    box-shadow: 0 4px 0 #2c3e50;
+    white-space: nowrap;
+  }
+  .score { color: #d35400; }
+  .lives { color: #c0392b; }
+  .level { color: #2980b9; }
+  .planet { color: #6a1b9a; }
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    text-align: center;
+    padding: 20px;
+  }
+  .card {
+    background: linear-gradient(180deg, #fffbe6, #ffe9a8);
+    border: 6px solid #2c3e50;
+    border-radius: 30px;
+    padding: 20px 24px;
+    max-width: 540px;
+    width: 94%;
+    box-shadow: 0 8px 0 #2c3e50, 0 16px 30px rgba(0,0,0,0.5);
+    max-height: 94vh;
+    overflow-y: auto;
+  }
+  h1 {
+    font-size: clamp(30px, 6.5vw, 46px);
+    color: #d35400;
+    text-shadow: 3px 3px 0 #fff, 5px 5px 0 #2c3e50;
+    margin-bottom: 6px;
+    line-height: 1;
+  }
+  h2 {
+    font-size: clamp(22px, 5vw, 34px);
+    color: #2c3e50;
+    margin-bottom: 8px;
+  }
+  p {
+    font-size: clamp(13px, 2.8vw, 17px);
+    color: #2c3e50;
+    margin: 5px 0;
+    line-height: 1.4;
+  }
+  .big-emoji {
+    font-size: clamp(42px, 10vw, 64px);
+    margin: 4px 0;
+    display: block;
+  }
+  button {
+    margin-top: 12px;
+    background: linear-gradient(180deg, #2ecc71, #27ae60);
+    border: 5px solid #1e6b3a;
+    color: white;
+    font-family: inherit;
+    font-weight: bold;
+    font-size: clamp(20px, 4.5vw, 28px);
+    padding: 12px 32px;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #1e6b3a;
+    transition: transform 0.1s, box-shadow 0.1s;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+  }
+  button:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 #1e6b3a;
+  }
+  .hidden { display: none !important; }
+  .legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    margin: 8px 0;
+    font-size: clamp(11px, 2.6vw, 15px);
+  }
+  .legend div {
+    background: white;
+    padding: 5px 8px;
+    border-radius: 12px;
+    border: 2px solid #2c3e50;
+    text-align: center;
+  }
+  .good { color: #27ae60; }
+  .bad { color: #c0392b; }
+  .floater {
+    position: absolute;
+    pointer-events: none;
+    font-size: clamp(18px, 3.6vw, 28px);
+    font-weight: bold;
+    z-index: 4;
+    animation: floatUp 1s ease-out forwards;
+    text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff;
+  }
+  @keyframes floatUp {
+    0%   { transform: translate(-50%, 0) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -80px) scale(1.6); opacity: 0; }
+  }
+  .controls-hint {
+    position: absolute;
+    bottom: 8px; left: 0; right: 0;
+    text-align: center;
+    color: #fff;
+    font-size: clamp(12px, 2.5vw, 16px);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    z-index: 3;
+    pointer-events: none;
+    transition: opacity 0.5s;
+  }
+  .levelup {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 6;
+    animation: pop 2.4s ease-out forwards;
+  }
+  .levelup .lvl-text {
+    font-size: clamp(34px, 8vw, 64px);
+    font-weight: bold;
+    color: #ffeb3b;
+    text-shadow: 3px 3px 0 #2c3e50, 6px 6px 20px rgba(0,0,0,0.6);
+  }
+  .levelup .planet-text {
+    font-size: clamp(28px, 6vw, 48px);
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 3px 3px 0 #2c3e50, 6px 6px 20px rgba(0,0,0,0.6);
+    margin-top: 8px;
+  }
+  .levelup .planet-emoji {
+    font-size: clamp(60px, 14vw, 100px);
+    margin-top: 4px;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+  }
+  @keyframes pop {
+    0% { transform: scale(0); opacity: 0; }
+    15% { transform: scale(1.2); opacity: 1; }
+    85% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+
+  /* Pause button */
+  .pause-btn {
+    pointer-events: auto;
+    background: rgba(255,255,255,0.92);
+    border: 4px solid #2c3e50;
+    border-radius: 50%;
+    width: clamp(38px, 8vw, 48px);
+    height: clamp(38px, 8vw, 48px);
+    font-size: clamp(18px, 4vw, 24px);
+    color: #2c3e50;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #2c3e50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: transform 0.06s, box-shadow 0.06s;
+    font-family: inherit;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .pause-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #2c3e50;
+  }
+  .secondary-btn {
+    background: linear-gradient(180deg, #95a5a6, #7f8c8d) !important;
+    border-color: #4a5759 !important;
+    box-shadow: 0 6px 0 #4a5759 !important;
+    margin-top: 10px;
+  }
+
+  /* On-screen touch controls */
+  .touch-controls {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 18px;
+    pointer-events: none;
+    z-index: 8;
+  }
+  .touch-pad {
+    display: grid;
+    gap: 10px;
+    pointer-events: auto;
+  }
+  .pad-left { grid-template-columns: auto auto; }
+  .pad-right { grid-template-columns: auto; grid-template-rows: auto auto; }
+  .ctrl-btn {
+    width: clamp(58px, 11vw, 88px);
+    height: clamp(58px, 11vw, 88px);
+    font-size: clamp(28px, 5vw, 44px);
+    background: rgba(255,255,255,0.65);
+    border: 4px solid #2c3e50;
+    border-radius: 50%;
+    color: #2c3e50;
+    font-weight: bold;
+    box-shadow: 0 4px 0 #2c3e50;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform 0.06s, box-shadow 0.06s, background 0.1s;
+    font-family: inherit;
+  }
+  .ctrl-btn.pressed {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #2c3e50;
+    background: rgba(255, 235, 59, 0.95);
+  }
+  /* Hide touch controls on devices with a real mouse */
+  @media (hover: hover) and (pointer: fine) {
+    .touch-controls { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <canvas id="canvas"></canvas>
+
+  <div class="ui hidden" id="hud">
+    <button class="pause-btn" id="pauseBtn" aria-label="Pause">⏸</button>
+    <div class="pill score">⭐ <span id="score">0</span></div>
+    <div class="pill planet"><span id="planetEmoji">🌍</span> <span id="planetName">Earth</span></div>
+    <div class="pill level">🚦 Lvl <span id="levelNum">1</span></div>
+    <div class="pill lives">❤️ <span id="lives">3</span></div>
+  </div>
+
+  <div class="overlay hidden" id="pauseScreen">
+    <div class="card">
+      <span class="big-emoji">⏸️</span>
+      <h2>Paused</h2>
+      <p>Take a break — the trash isn't going anywhere!</p>
+      <button id="resumeBtn">▶ Resume</button>
+      <br>
+      <button id="restartBtn" class="secondary-btn">↺ Restart</button>
+    </div>
+  </div>
+
+  <div class="controls-hint hidden" id="hint">
+    Use the buttons or arrow keys to drive! Pick up the trash bags!
+  </div>
+
+  <div class="touch-controls hidden" id="touchControls">
+    <div class="touch-pad pad-left">
+      <button class="ctrl-btn" data-key="ArrowLeft" aria-label="Left">←</button>
+      <button class="ctrl-btn" data-key="ArrowRight" aria-label="Right">→</button>
+    </div>
+    <div class="touch-pad pad-right">
+      <button class="ctrl-btn" data-key="ArrowUp" aria-label="Up">↑</button>
+      <button class="ctrl-btn" data-key="ArrowDown" aria-label="Down">↓</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="startScreen">
+    <div class="card">
+      <span class="big-emoji">🚛🌍🪐</span>
+      <h1>Catch the Garbage!</h1>
+      <p>Drive your trash truck through the neighborhood and pick up garbage! Each level takes you to a new planet — even the Moon, Mars, and Saturn!</p>
+      <div class="legend">
+        <div class="good">🗑️ Trash = +10</div>
+        <div class="good">⭐ Star = +50</div>
+        <div class="good">❤️ Heart = +Life!</div>
+        <div class="bad">🚗 Cars</div>
+        <div class="bad">🚶 People</div>
+        <div class="bad">🐕 Dogs</div>
+        <div class="bad">🐔 Chickens</div>
+        <div class="bad">🐸 Frogs</div>
+        <div class="bad">👽 Aliens</div>
+        <div class="bad">🛸 UFOs</div>
+        <div class="bad">☄️ Asteroids</div>
+      </div>
+      <p><b>Steer:</b> ← → arrows · <b>Move up/down:</b> ↑ ↓ · or tap & drag</p>
+      <button id="startBtn">▶ Blast Off!</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="gameOverScreen">
+    <div class="card">
+      <span class="big-emoji" id="endEmoji">🎉</span>
+      <h2 id="endTitle">Great Job!</h2>
+      <p>Your Score: <b id="finalScore">0</b></p>
+      <p>Bags Collected: <b id="bagsCollected">0</b></p>
+      <p>Planets Visited: <b id="planetsVisited">1</b></p>
+      <p id="highScoreText">🏆 High Score: <b id="highScore">0</b></p>
+      <button id="playAgainBtn">▶ Play Again!</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const livesEl = document.getElementById('lives');
+  const levelNumEl = document.getElementById('levelNum');
+  const planetNameEl = document.getElementById('planetName');
+  const planetEmojiEl = document.getElementById('planetEmoji');
+  const hud = document.getElementById('hud');
+  const hint = document.getElementById('hint');
+  const startScreen = document.getElementById('startScreen');
+  const gameOverScreen = document.getElementById('gameOverScreen');
+  const startBtn = document.getElementById('startBtn');
+  const playAgainBtn = document.getElementById('playAgainBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const pauseScreen = document.getElementById('pauseScreen');
+  const resumeBtn = document.getElementById('resumeBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const finalScoreEl = document.getElementById('finalScore');
+  const bagsCollectedEl = document.getElementById('bagsCollected');
+  const planetsVisitedEl = document.getElementById('planetsVisited');
+  const highScoreEl = document.getElementById('highScore');
+  const endEmoji = document.getElementById('endEmoji');
+  const endTitle = document.getElementById('endTitle');
+  const gameDiv = document.getElementById('game');
+
+  let W = 0, H = 0, dpr = window.devicePixelRatio || 1;
+
+  function resize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    layoutWorld();
+    initStars();
+  }
+
+  let SIDEWALK_L, SIDEWALK_R, ROAD_L, ROAD_R, ROAD_W, LANE_DIVIDER;
+  let HOUSE_L_RIGHT, HOUSE_R_LEFT;
+  function layoutWorld() {
+    HOUSE_L_RIGHT = W * 0.18;
+    SIDEWALK_L = W * 0.18;
+    ROAD_L = W * 0.24;
+    ROAD_R = W * 0.76;
+    SIDEWALK_R = W * 0.82;
+    HOUSE_R_LEFT = W * 0.82;
+    ROAD_W = ROAD_R - ROAD_L;
+    LANE_DIVIDER = ROAD_L + ROAD_W / 2;
+  }
+  window.addEventListener('resize', resize);
+
+  // ---- Planets ----
+  const PLANETS = [
+    { name: 'Earth',   emoji: '🌍', skyTop: '#87CEEB', skyBottom: '#B0E0E6', ground: '#7cb342', sidewalk: '#bdc3c7', road: '#37474f', divider: '#ffeb3b', stars: false, rings: false, houseStyle: 'house', carStyle: 'car', pedStyle: 'person', allowAliens: false, bigPlanet: null },
+    { name: 'Moon',    emoji: '🌕', skyTop: '#000010', skyBottom: '#0a0a25', ground: '#9e9e9e', sidewalk: '#cfd2d4', road: '#5d5d5d', divider: '#fff', stars: true,  rings: false, houseStyle: 'dome', carStyle: 'rover', pedStyle: 'astronaut', allowAliens: false, bigPlanet: { color: '#3b6cb7', name: 'Earth', size: 0.16 } },
+    { name: 'Mars',    emoji: '🔴', skyTop: '#3d1208', skyBottom: '#7a2912', ground: '#c1440e', sidewalk: '#e0a080', road: '#7a3520', divider: '#ffeb3b', stars: true, rings: false, houseStyle: 'mars',  carStyle: 'rover', pedStyle: 'alien', allowAliens: true,  bigPlanet: null },
+    { name: 'Jupiter', emoji: '🪐', skyTop: '#5b3a1a', skyBottom: '#a0623a', ground: '#d4a574', sidewalk: '#f0d8b0', road: '#7e5530', divider: '#ffeb3b', stars: true, rings: false, houseStyle: 'space', carStyle: 'spaceship', pedStyle: 'alien', allowAliens: true, bigPlanet: { stripes: true } },
+    { name: 'Saturn',  emoji: '🪐', skyTop: '#3a2a40', skyBottom: '#6e5a78', ground: '#d4b886', sidewalk: '#f0e0c0', road: '#806040', divider: '#ffeb3b', stars: true, rings: true,  houseStyle: 'space', carStyle: 'spaceship', pedStyle: 'alien', allowAliens: true, bigPlanet: null },
+    { name: 'Uranus',  emoji: '🔵', skyTop: '#1e4858', skyBottom: '#5fb4c8', ground: '#7fdbf2', sidewalk: '#cdeff5', road: '#3a7a8a', divider: '#fff', stars: true, rings: false, houseStyle: 'ice', carStyle: 'spaceship', pedStyle: 'alien', allowAliens: true,  bigPlanet: null },
+    { name: 'Neptune', emoji: '💙', skyTop: '#0a1a4a', skyBottom: '#2c4ec0', ground: '#4060ff', sidewalk: '#a0b8ff', road: '#1a2a6a', divider: '#fff', stars: true, rings: false, houseStyle: 'ice', carStyle: 'spaceship', pedStyle: 'alien', allowAliens: true,  bigPlanet: null },
+    { name: 'Pluto',   emoji: '🌑', skyTop: '#000010', skyBottom: '#1a1a3e', ground: '#a0a0c0', sidewalk: '#d0d0e0', road: '#4a4a6a', divider: '#fff', stars: true, rings: false, houseStyle: 'ice', carStyle: 'spaceship', pedStyle: 'alien', allowAliens: true,  bigPlanet: null }
+  ];
+  function getPlanet(level) {
+    return PLANETS[(level - 1) % PLANETS.length];
+  }
+
+  // background stars
+  let bgStars = [];
+  function initStars() {
+    bgStars = [];
+    for (let i = 0; i < 80; i++) {
+      bgStars.push({ x: Math.random() * W, y: Math.random() * H * 0.6, r: Math.random() * 1.6 + 0.4, tw: Math.random() * Math.PI * 2 });
+    }
+  }
+
+  // ---- Audio ----
+  let audioCtx;
+  function initAudio() { if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} } }
+  function beep(freq, duration, type = 'sine', volume = 0.15, attack = 0.005) {
+    if (!audioCtx) return;
+    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, audioCtx.currentTime);
+    g.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + attack);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + duration);
+  }
+  function noise(duration, volume = 0.12) {
+    if (!audioCtx) return;
+    const sz = audioCtx.sampleRate * duration;
+    const buf = audioCtx.createBuffer(1, sz, audioCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < sz; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / sz);
+    const s = audioCtx.createBufferSource(); const g = audioCtx.createGain();
+    g.gain.value = volume; s.buffer = buf; s.connect(g); g.connect(audioCtx.destination); s.start();
+  }
+  function playPickup() { beep(700, 0.08, 'square', 0.12); setTimeout(() => beep(950, 0.1, 'square', 0.12), 60); }
+  function playBonus() { beep(700, 0.06, 'square', 0.13); setTimeout(() => beep(900, 0.06, 'square', 0.13), 50); setTimeout(() => beep(1200, 0.08, 'square', 0.13), 100); setTimeout(() => beep(1500, 0.18, 'square', 0.13), 150); }
+  function playCrash() { noise(0.4, 0.18); beep(120, 0.3, 'sawtooth', 0.18); setTimeout(() => beep(80, 0.2, 'sawtooth', 0.18), 100); }
+  function playHonk() { beep(300, 0.18, 'square', 0.08); }
+  function playAsteroid() { noise(0.6, 0.15); beep(60, 0.5, 'sawtooth', 0.2); }
+  function playLevelUp() { beep(523, 0.1, 'square', 0.15); setTimeout(() => beep(659, 0.1, 'square', 0.15), 100); setTimeout(() => beep(784, 0.1, 'square', 0.15), 200); setTimeout(() => beep(1047, 0.25, 'square', 0.15), 300); }
+  function playGameOver() { beep(400, 0.2, 'square', 0.15); setTimeout(() => beep(300, 0.2, 'square', 0.15), 200); setTimeout(() => beep(200, 0.4, 'square', 0.15), 400); }
+  function playCluck() { beep(800, 0.05, 'square', 0.08); setTimeout(() => beep(600, 0.07, 'square', 0.08), 50); }
+  function playRibbit() { beep(180, 0.08, 'sawtooth', 0.1); setTimeout(() => beep(220, 0.1, 'sawtooth', 0.1), 80); }
+  function playUfo() { beep(1200, 0.3, 'sine', 0.06); setTimeout(() => beep(800, 0.3, 'sine', 0.06), 150); }
+  function playHeart() {
+    beep(523, 0.08, 'sine', 0.18);
+    setTimeout(() => beep(659, 0.08, 'sine', 0.18), 80);
+    setTimeout(() => beep(784, 0.08, 'sine', 0.18), 160);
+    setTimeout(() => beep(1047, 0.25, 'sine', 0.18), 240);
+  }
+
+  // ---- Game state ----
+  const STATE = { READY: 0, PLAYING: 1, OVER: 2 };
+  let state = STATE.READY;
+  let score = 0, lives = 3, level = 1, bagsCollected = 0;
+  let highScore = 0;
+  let invulnTimer = 0, cameraShake = 0;
+  let planetsVisited = 1;
+  let paused = false;
+  try { highScore = parseInt(localStorage.getItem('ctg_highscore_v3') || '0', 10) || 0; } catch(e) {}
+
+  const truck = { x: 0, y: 0, w: 0, h: 0, targetX: 0, targetY: 0, angle: 0, bouncePhase: 0 };
+
+  let baseSpeed = 4, speed = baseSpeed;
+  let worldY = 0;
+  let entities = [], particles = [], houses = [], trees = [];
+
+  let spawnTimer = {};
+  let lastTime = 0;
+  let gameTime = 0;
+  let levelStartTime = 0;
+  const LEVEL_DURATION = 22000;
+
+  // ---- Input ----
+  const keys = {};
+  window.addEventListener('keydown', e => {
+    keys[e.key] = true;
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(e.key)) e.preventDefault();
+  });
+  window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+  let pointerActive = false;
+  function onPointer(e) {
+    if (state !== STATE.PLAYING) return;
+    const x = (e.touches ? e.touches[0].clientX : e.clientX);
+    const y = (e.touches ? e.touches[0].clientY : e.clientY);
+    truck.targetX = x;
+    truck.targetY = y;
+  }
+  gameDiv.addEventListener('pointerdown', e => {
+    if (e.target.closest('.ctrl-btn')) return; // let buttons handle their own
+    pointerActive = true; onPointer(e);
+  });
+  gameDiv.addEventListener('pointermove', e => { if (pointerActive) onPointer(e); });
+  gameDiv.addEventListener('pointerup', () => { pointerActive = false; });
+  gameDiv.addEventListener('pointerleave', () => { pointerActive = false; });
+  gameDiv.addEventListener('touchstart', () => { initAudio(); }, { passive: true });
+  // Prevent iOS Safari from rubber-banding the page when dragging
+  document.addEventListener('touchmove', e => {
+    if (state === STATE.PLAYING) e.preventDefault();
+  }, { passive: false });
+  // Prevent iOS double-tap zoom
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 350) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
+
+  // ---- On-screen touch buttons ----
+  const touchControls = document.getElementById('touchControls');
+  document.querySelectorAll('.ctrl-btn').forEach(btn => {
+    const key = btn.dataset.key;
+    const press = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      initAudio();
+      keys[key] = true;
+      btn.classList.add('pressed');
+    };
+    const release = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      keys[key] = false;
+      btn.classList.remove('pressed');
+    };
+    btn.addEventListener('pointerdown', press);
+    btn.addEventListener('pointerup', release);
+    btn.addEventListener('pointercancel', release);
+    btn.addEventListener('pointerleave', release);
+    // Don't open context menu on long-press
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  });
+
+  // ---- Helpers ----
+  function rand(a, b) { return a + Math.random() * (b - a); }
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function rectOverlap(a, b) {
+    return a.x - a.w/2 < b.x + b.w/2 && a.x + a.w/2 > b.x - b.w/2 &&
+           a.y - a.h/2 < b.y + b.h/2 && a.y + a.h/2 > b.y - b.h/2;
+  }
+
+  function initWorld() {
+    houses = []; trees = [];
+    const houseSpacing = 180;
+    for (let y = -100; y < H + 200; y += houseSpacing) {
+      houses.push(makeHouse('L', y));
+      houses.push(makeHouse('R', y));
+    }
+    for (let y = -50; y < H + 100; y += 110) {
+      if (Math.random() < 0.6) trees.push(makeTree('L', y));
+      if (Math.random() < 0.6) trees.push(makeTree('R', y));
+    }
+  }
+
+  function makeHouse(side, y) {
+    const colors = ['#f4a261', '#e76f51', '#e9c46a', '#a8dadc', '#f1c0e8', '#cdb4db', '#bde0fe', '#caffbf'];
+    const roofColors = ['#6b2737', '#4a3142', '#2d3047', '#1d3557', '#3d5a80'];
+    return { side, y, color: pick(colors), roofColor: pick(roofColors), doorX: rand(0.3, 0.7), windows: Math.floor(rand(2, 4)) };
+  }
+  function makeTree(side, y) {
+    return { side, y, x: side === 'L' ? rand(W * 0.02, W * 0.13) : rand(W * 0.87, W * 0.98), r: rand(14, 22), type: Math.random() < 0.7 ? 'leafy' : 'pine' };
+  }
+
+  // ---- Spawners ----
+  function spawnCar() {
+    const colors = ['#3498db', '#9b59b6', '#e74c3c', '#f39c12', '#1abc9c', '#34495e'];
+    const onComing = Math.random() < 0.7;
+    let x, vy;
+    if (onComing) { x = rand(ROAD_L + 30, LANE_DIVIDER - 20); vy = speed + rand(2, 4); }
+    else { x = rand(LANE_DIVIDER + 20, ROAD_R - 30); vy = speed - rand(1, 2.5); }
+    entities.push({ type: 'car', x, y: -80, w: 50, h: 90, vx: 0, vy, color: pick(colors), facingDown: onComing, wobble: Math.random() * Math.PI * 2 });
+  }
+
+  function spawnPerson() {
+    const fromLeft = Math.random() < 0.5;
+    entities.push({
+      type: 'person', x: fromLeft ? SIDEWALK_L - 5 : SIDEWALK_R + 5, y: rand(50, H * 0.6),
+      w: 28, h: 36, vx: fromLeft ? rand(0.8, 1.4) : -rand(0.8, 1.4), vy: speed * 0.9,
+      walkPhase: 0, shirtColor: pick(['#e74c3c', '#3498db', '#27ae60', '#f39c12', '#9b59b6', '#ec407a']),
+      pantsColor: pick(['#2c3e50', '#34495e', '#795548', '#1565c0'])
+    });
+  }
+
+  function spawnAlien() {
+    const fromLeft = Math.random() < 0.5;
+    entities.push({
+      type: 'alien', x: fromLeft ? SIDEWALK_L - 5 : SIDEWALK_R + 5, y: rand(50, H * 0.6),
+      w: 30, h: 40, vx: fromLeft ? rand(0.7, 1.3) : -rand(0.7, 1.3), vy: speed * 0.85,
+      walkPhase: 0, bodyColor: pick(['#7cfc00', '#00fa9a', '#ba55d3', '#40e0d0', '#ff69b4']),
+      eyeCount: pick([1, 2, 3]), float: Math.random() * Math.PI * 2
+    });
+  }
+
+  function spawnDog() {
+    const fromLeft = Math.random() < 0.5;
+    entities.push({
+      type: 'dog', x: fromLeft ? -20 : W + 20, y: rand(80, H * 0.7),
+      w: 36, h: 24, vx: fromLeft ? rand(2.5, 4) : -rand(2.5, 4), vy: speed * 0.85,
+      runPhase: 0, bodyColor: pick(['#8b4513', '#d2691e', '#f4a460', '#696969', '#fff'])
+    });
+  }
+
+  function spawnChicken() {
+    const fromLeft = Math.random() < 0.5;
+    entities.push({
+      type: 'chicken', x: fromLeft ? -20 : W + 20, y: rand(60, H * 0.75),
+      w: 28, h: 30, vx: fromLeft ? rand(1.6, 2.6) : -rand(1.6, 2.6), vy: speed * 0.88,
+      walkPhase: 0, headBob: 0, cluckTimer: rand(800, 2500),
+      bodyColor: pick(['#fff', '#fff', '#f5deb3', '#a0522d'])
+    });
+    if (Math.random() < 0.4) playCluck();
+  }
+
+  function spawnFrog() {
+    const fromLeft = Math.random() < 0.5;
+    entities.push({
+      type: 'frog', x: fromLeft ? -20 : W + 20, y: rand(80, H * 0.7),
+      w: 26, h: 22, vx: 0, vy: speed * 0.95,
+      hopDir: fromLeft ? 1 : -1,
+      hopState: 'wait', hopTimer: 0, hopDuration: 320, hopWaitDuration: rand(280, 520),
+      hopFromX: 0, hopToX: 0, hopFromY: 0, hopToY: 0, hopProgress: 0,
+      ribbitTimer: rand(1000, 3000)
+    });
+    const f = entities[entities.length - 1];
+    f.hopFromX = f.x; f.hopFromY = f.y;
+    if (Math.random() < 0.5) playRibbit();
+  }
+
+  function spawnUFO() {
+    const fromLeft = Math.random() < 0.5;
+    entities.push({
+      type: 'ufo', x: fromLeft ? -50 : W + 50, y: rand(40, H * 0.45),
+      w: 70, h: 36, vx: fromLeft ? rand(2.5, 4.5) : -rand(2.5, 4.5), vy: 0,
+      bobPhase: 0, lightPulse: 0
+    });
+    playUfo();
+  }
+
+  function spawnAsteroid() {
+    const targetX = rand(ROAD_L - 20, ROAD_R + 20);
+    entities.push({
+      type: 'asteroid', x: targetX, y: -100, targetX, targetY: rand(H * 0.3, H * 0.85),
+      w: 50, h: 50, vx: 0, vy: 0,
+      fallProgress: 0, fallDuration: 1400, exploded: false, explodeTime: 0,
+      rotation: 0, vrot: rand(-0.2, 0.2)
+    });
+  }
+
+  function spawnGarbage() {
+    const side = Math.random() < 0.5 ? 'L' : 'R';
+    const x = side === 'L' ? rand(SIDEWALK_L + 6, ROAD_L - 12) : rand(ROAD_R + 12, SIDEWALK_R - 6);
+    entities.push({
+      type: 'garbage', x, y: -30, w: 34, h: 38, vx: 0, vy: speed,
+      bagType: pick(['bag', 'can', 'pile']), wobble: 0
+    });
+  }
+
+  function spawnStar() {
+    entities.push({
+      type: 'star', x: rand(ROAD_L + 30, ROAD_R - 30), y: -30, w: 36, h: 36,
+      vx: 0, vy: speed, rotation: 0, pulse: 0
+    });
+  }
+
+  function spawnHeart() {
+    entities.push({
+      type: 'heart', x: rand(ROAD_L + 30, ROAD_R - 30), y: -30, w: 34, h: 34,
+      vx: 0, vy: speed, pulse: 0, bob: 0
+    });
+  }
+
+  // ---- Game flow ----
+  function startGame() {
+    initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    state = STATE.PLAYING;
+    paused = false;
+    pauseScreen.classList.add('hidden');
+    score = 0; lives = 3; level = 1; bagsCollected = 0; planetsVisited = 1;
+    entities = []; particles = [];
+    invulnTimer = 0; cameraShake = 0;
+    baseSpeed = 4; speed = baseSpeed;
+    gameTime = 0; levelStartTime = 0;
+    spawnTimer = { car: 0, person: 1500, dog: 3000, asteroid: 5000, garbage: 0, star: 8000, chicken: 4000, frog: 2500, alien: 2000, ufo: 6000, heart: 12000 };
+    truck.w = Math.min(60, ROAD_W * 0.28);
+    truck.h = truck.w * 1.6;
+    truck.x = LANE_DIVIDER + ROAD_W * 0.2;
+    truck.targetX = truck.x;
+    truck.y = H - 110;
+    truck.targetY = truck.y;
+    truck.angle = 0;
+    initWorld();
+    updatePlanetUI();
+    updateUI();
+    startScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    hud.classList.remove('hidden');
+    touchControls.classList.remove('hidden');
+    hint.classList.remove('hidden');
+    hint.style.opacity = '1';
+    setTimeout(() => { hint.style.opacity = '0'; }, 5000);
+    setTimeout(() => { hint.classList.add('hidden'); }, 6000);
+  }
+
+  function endGame() {
+    state = STATE.OVER;
+    playGameOver();
+    if (score > highScore) {
+      highScore = score;
+      try { localStorage.setItem('ctg_highscore_v3', String(highScore)); } catch(e) {}
+    }
+    finalScoreEl.textContent = score;
+    bagsCollectedEl.textContent = bagsCollected;
+    planetsVisitedEl.textContent = planetsVisited;
+    highScoreEl.textContent = highScore;
+    if (planetsVisited >= 5 || score >= 500) { endEmoji.textContent = '🏆'; endTitle.textContent = 'COSMIC HERO!'; }
+    else if (score >= 250) { endEmoji.textContent = '🎉'; endTitle.textContent = 'Awesome!'; }
+    else if (score >= 100) { endEmoji.textContent = '😊'; endTitle.textContent = 'Good Job!'; }
+    else { endEmoji.textContent = '🚛'; endTitle.textContent = 'Try Again!'; }
+    hud.classList.add('hidden');
+    touchControls.classList.add('hidden');
+    hint.classList.add('hidden');
+    gameOverScreen.classList.remove('hidden');
+  }
+
+  function updateUI() {
+    scoreEl.textContent = score;
+    livesEl.textContent = '❤️'.repeat(Math.max(0, lives)) || '0';
+    levelNumEl.textContent = level;
+  }
+  function updatePlanetUI() {
+    const p = getPlanet(level);
+    planetNameEl.textContent = p.name;
+    planetEmojiEl.textContent = p.emoji;
+  }
+
+  function spawnFloater(x, y, text, color) {
+    const f = document.createElement('div');
+    f.className = 'floater';
+    f.textContent = text;
+    f.style.left = x + 'px';
+    f.style.top = y + 'px';
+    f.style.color = color;
+    gameDiv.appendChild(f);
+    setTimeout(() => f.remove(), 1000);
+  }
+
+  function spawnLevelUp(n) {
+    const p = getPlanet(n);
+    const el = document.createElement('div');
+    el.className = 'levelup';
+    el.innerHTML = '<div class="lvl-text">LEVEL ' + n + '!</div>' +
+                   '<div class="planet-emoji">' + p.emoji + '</div>' +
+                   '<div class="planet-text">Welcome to ' + p.name + '!</div>';
+    gameDiv.appendChild(el);
+    setTimeout(() => el.remove(), 2400);
+    playLevelUp();
+  }
+
+  function spawnParticles(x, y, color, count = 12, speedMul = 1) {
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 8 * speedMul,
+        vy: -Math.random() * 8 * speedMul - 2,
+        life: 1, color, size: 4 + Math.random() * 4
+      });
+    }
+  }
+
+  function shakeCamera(amount) { cameraShake = Math.max(cameraShake, amount); }
+
+  function hitTruck() {
+    if (invulnTimer > 0) return;
+    lives--; invulnTimer = 1500; shakeCamera(12);
+    spawnFloater(truck.x, truck.y - 30, 'Ouch!', '#e74c3c');
+    updateUI();
+    if (lives <= 0) endGame();
+  }
+
+  // ---- Update ----
+  function update(dt) {
+    if (state !== STATE.PLAYING || paused) return;
+    gameTime += dt;
+
+    const newLevel = 1 + Math.floor(gameTime / LEVEL_DURATION);
+    if (newLevel !== level) {
+      level = newLevel;
+      planetsVisited = Math.max(planetsVisited, level);
+      spawnLevelUp(level);
+      updatePlanetUI();
+    }
+    baseSpeed = 4 + level * 0.55;
+    speed = baseSpeed;
+
+    const moveSpeed = 7;
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) truck.targetX -= moveSpeed;
+    if (keys['ArrowRight'] || keys['d'] || keys['D']) truck.targetX += moveSpeed;
+    if (keys['ArrowUp'] || keys['w'] || keys['W']) truck.targetY -= moveSpeed;
+    if (keys['ArrowDown'] || keys['s'] || keys['S']) truck.targetY += moveSpeed;
+    truck.targetX = Math.max(SIDEWALK_L + truck.w/2 - 4, Math.min(SIDEWALK_R - truck.w/2 + 4, truck.targetX));
+    truck.targetY = Math.max(H * 0.25, Math.min(H - truck.h/2 - 10, truck.targetY));
+    const dx = truck.targetX - truck.x;
+    const dy = truck.targetY - truck.y;
+    truck.x += dx * 0.22;
+    truck.y += dy * 0.18;
+    truck.angle = Math.max(-0.25, Math.min(0.25, dx * 0.02));
+    truck.bouncePhase += dt / 80;
+
+    worldY += speed;
+
+    const houseSpacing = 180;
+    for (const h of houses) {
+      h.y += speed;
+      if (h.y > H + 100) {
+        h.y -= (Math.ceil((H + 200) / houseSpacing) + 1) * houseSpacing;
+        const nh = makeHouse(h.side, 0);
+        h.color = nh.color; h.roofColor = nh.roofColor; h.doorX = nh.doorX; h.windows = nh.windows;
+      }
+    }
+    for (const t of trees) {
+      t.y += speed;
+      if (t.y > H + 50) {
+        t.y -= H + 200;
+        t.x = t.side === 'L' ? rand(W * 0.02, W * 0.13) : rand(W * 0.87, W * 0.98);
+        t.r = rand(14, 22);
+        t.type = Math.random() < 0.7 ? 'leafy' : 'pine';
+      }
+    }
+
+    const planet = getPlanet(level);
+    const levelMul = 1 + (level - 1) * 0.13;
+    for (const k in spawnTimer) spawnTimer[k] += dt * levelMul;
+
+    if (spawnTimer.car >= rand(900, 1600)) { spawnTimer.car = 0; spawnCar(); }
+    if (planet.pedStyle === 'person' || planet.pedStyle === 'astronaut') {
+      if (spawnTimer.person >= rand(2200, 4200)) { spawnTimer.person = 0; spawnPerson(); }
+    }
+    if (planet.allowAliens) {
+      if (spawnTimer.alien >= rand(2200, 4000)) { spawnTimer.alien = 0; spawnAlien(); }
+      if (spawnTimer.ufo >= rand(7000, 11000)) { spawnTimer.ufo = 0; spawnUFO(); }
+    }
+    if (spawnTimer.dog >= rand(3500, 6500)) { spawnTimer.dog = 0; spawnDog(); }
+    if (spawnTimer.chicken >= rand(3000, 5500)) { spawnTimer.chicken = 0; spawnChicken(); }
+    if (spawnTimer.frog >= rand(2500, 4800)) { spawnTimer.frog = 0; spawnFrog(); }
+    if (spawnTimer.asteroid >= rand(5000, 9000)) { spawnTimer.asteroid = 0; spawnAsteroid(); }
+    if (spawnTimer.garbage >= rand(700, 1300)) { spawnTimer.garbage = 0; spawnGarbage(); }
+    if (spawnTimer.star >= rand(9000, 14000)) { spawnTimer.star = 0; spawnStar(); }
+    if (spawnTimer.heart >= rand(15000, 22000)) { spawnTimer.heart = 0; spawnHeart(); }
+
+    if (invulnTimer > 0) invulnTimer -= dt;
+    if (cameraShake > 0) cameraShake -= dt * 0.04;
+
+    for (let i = entities.length - 1; i >= 0; i--) {
+      const e = entities[i];
+
+      if (e.type === 'asteroid') {
+        e.fallProgress += dt;
+        const t = Math.min(1, e.fallProgress / e.fallDuration);
+        e.y = -100 + (e.targetY + 100) * t;
+        e.x = e.targetX;
+        e.rotation += e.vrot;
+        if (t >= 1 && !e.exploded) {
+          e.exploded = true; e.explodeTime = 0;
+          playAsteroid(); shakeCamera(15);
+          spawnParticles(e.x, e.y, '#ff6b35', 30, 2);
+          spawnParticles(e.x, e.y, '#ffd700', 20, 1.5);
+        }
+        if (e.exploded) {
+          e.explodeTime += dt;
+          if (e.explodeTime < 300 && invulnTimer <= 0) {
+            const dx2 = truck.x - e.x, dy2 = truck.y - e.y;
+            if (Math.sqrt(dx2*dx2 + dy2*dy2) < 70) hitTruck();
+          }
+          if (e.explodeTime > 600) entities.splice(i, 1);
+        }
+        continue;
+      }
+
+      if (e.type === 'frog') {
+        e.hopTimer += dt;
+        if (e.hopState === 'wait') {
+          if (e.hopTimer >= e.hopWaitDuration) {
+            e.hopTimer = 0; e.hopState = 'hop'; e.hopProgress = 0;
+            e.hopFromX = e.x; e.hopFromY = e.y;
+            const hopDistX = rand(35, 65) * e.hopDir;
+            const hopDistY = (Math.random() < 0.4 ? rand(-18, 18) : 0);
+            e.hopToX = e.x + hopDistX; e.hopToY = e.y + hopDistY;
+            if (Math.random() < 0.15) playRibbit();
+          }
+        } else {
+          e.hopProgress = Math.min(1, e.hopTimer / e.hopDuration);
+          e.x = e.hopFromX + (e.hopToX - e.hopFromX) * e.hopProgress;
+          e.y = e.hopFromY + (e.hopToY - e.hopFromY) * e.hopProgress;
+          if (e.hopProgress >= 1) { e.hopState = 'wait'; e.hopTimer = 0; e.hopWaitDuration = rand(180, 380); }
+        }
+        e.y += speed * 0.95 * (dt / 16.67); // world scroll component
+        if (e.x < -40 || e.x > W + 40 || e.y > H + 40) { entities.splice(i, 1); continue; }
+        // collision
+        if (invulnTimer <= 0) {
+          const truckBox = { x: truck.x, y: truck.y, w: truck.w * 0.9, h: truck.h * 0.85 };
+          const eBox = { x: e.x, y: e.y, w: e.w * 0.85, h: e.h * 0.85 };
+          if (rectOverlap(truckBox, eBox)) {
+            hitTruck(); playCrash();
+            spawnParticles(e.x, e.y, '#7cfc00', 18);
+            entities.splice(i, 1);
+          }
+        }
+        continue;
+      }
+
+      if (e.type === 'chicken') {
+        e.cluckTimer -= dt;
+        if (e.cluckTimer <= 0) { e.cluckTimer = rand(1500, 3500); if (Math.random() < 0.5) playCluck(); }
+      }
+
+      e.x += e.vx;
+      e.y += e.vy;
+
+      if (e.type === 'person' || e.type === 'alien') e.walkPhase += 0.2;
+      if (e.type === 'dog') e.runPhase += 0.4;
+      if (e.type === 'chicken') { e.walkPhase += 0.3; e.headBob += 0.5; }
+      if (e.type === 'car') {
+        e.wobble += 0.1;
+        if (Math.random() < 0.0008) playHonk();
+      }
+      if (e.type === 'star') { e.rotation += 0.05; e.pulse += 0.1; }
+      if (e.type === 'heart') { e.pulse += 0.12; e.bob += 0.08; }
+      if (e.type === 'garbage') e.wobble += 0.05;
+      if (e.type === 'ufo') {
+        e.bobPhase += 0.05; e.lightPulse += 0.1;
+      }
+      if (e.type === 'alien') e.float += 0.1;
+
+      if (e.y > H + 100 || e.x < -100 || e.x > W + 100) { entities.splice(i, 1); continue; }
+
+      const dangerous = ['car', 'person', 'dog', 'chicken', 'alien', 'ufo'];
+      if (invulnTimer > 0 && dangerous.includes(e.type)) continue;
+
+      const truckBox = { x: truck.x, y: truck.y, w: truck.w * 0.9, h: truck.h * 0.85 };
+      const eBox = { x: e.x, y: e.y, w: e.w * 0.85, h: e.h * 0.85 };
+      if (rectOverlap(truckBox, eBox)) {
+        if (e.type === 'garbage') {
+          score += 10; bagsCollected++;
+          playPickup(); spawnParticles(e.x, e.y, '#27ae60', 12);
+          spawnFloater(e.x, e.y - 20, '+10', '#27ae60');
+          entities.splice(i, 1); updateUI();
+        } else if (e.type === 'star') {
+          score += 50;
+          playBonus(); spawnParticles(e.x, e.y, '#ffd700', 25);
+          spawnFloater(e.x, e.y - 20, '+50 ⭐', '#ffd700');
+          entities.splice(i, 1); updateUI();
+        } else if (e.type === 'heart') {
+          if (lives < 5) lives++;
+          score += 25;
+          playHeart();
+          spawnParticles(e.x, e.y, '#ff4081', 20);
+          spawnFloater(e.x, e.y - 20, '+❤️ Life!', '#ff4081');
+          entities.splice(i, 1); updateUI();
+        } else {
+          hitTruck(); playCrash();
+          let pColor = '#e74c3c';
+          if (e.type === 'chicken') pColor = '#fff';
+          if (e.type === 'alien') pColor = e.bodyColor;
+          if (e.type === 'ufo') pColor = '#9b59b6';
+          spawnParticles(e.x, e.y, pColor, 18, 1.3);
+          // Remove the offender so it can't keep damaging us as it scrolls past
+          entities.splice(i, 1);
+        }
+      }
+    }
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      p.vy += 0.4; p.vx *= 0.98;
+      p.life -= dt / 800;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+  }
+
+  // ---- Drawing background per planet ----
+  function drawSky() {
+    const planet = getPlanet(level);
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, planet.skyTop);
+    grad.addColorStop(1, planet.skyBottom);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    if (planet.stars) {
+      for (const s of bgStars) {
+        const tw = (Math.sin(Date.now() / 600 + s.tw) + 1) * 0.5;
+        ctx.fillStyle = 'rgba(255,255,255,' + (0.5 + tw * 0.5) + ')';
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Saturn rings as banner
+    if (planet.rings) {
+      drawSaturnRings();
+    }
+
+    // Big planet in distance (e.g. Earth from Moon, Jupiter as gas giant)
+    if (planet.bigPlanet) {
+      drawBigPlanet(planet);
+    }
+
+    // Distant ringed planet for Saturn level
+    if (planet.name === 'Saturn') {
+      drawDistantSaturn();
+    }
+  }
+
+  function drawSaturnRings() {
+    // Diagonal ring bands across the upper half of the screen
+    ctx.save();
+    ctx.translate(W / 2, H * 0.18);
+    ctx.rotate(-0.18);
+    const rings = [
+      { r: W * 1.2, w: 18, color: 'rgba(220, 200, 150, 0.7)' },
+      { r: W * 1.05, w: 8,  color: 'rgba(180, 160, 110, 0.5)' },
+      { r: W * 0.95, w: 14, color: 'rgba(240, 210, 150, 0.6)' },
+      { r: W * 0.85, w: 6,  color: 'rgba(200, 180, 130, 0.5)' },
+      { r: W * 0.75, w: 10, color: 'rgba(220, 190, 140, 0.55)' }
+    ];
+    for (const ring of rings) {
+      ctx.strokeStyle = ring.color;
+      ctx.lineWidth = ring.w;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, ring.r, ring.r * 0.18, 0, Math.PI * 0.05, Math.PI * 0.95);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawDistantSaturn() {
+    const cx = W * 0.18, cy = H * 0.13;
+    const r = Math.min(W, H) * 0.07;
+    // Rings (back half)
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-0.25);
+    ctx.strokeStyle = 'rgba(230, 200, 140, 0.85)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 2.2, r * 0.5, 0, Math.PI, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(200, 170, 110, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 1.8, r * 0.4, 0, Math.PI, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+    // Planet body
+    const grad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+    grad.addColorStop(0, '#f4d990');
+    grad.addColorStop(0.6, '#d4a965');
+    grad.addColorStop(1, '#8a6e3a');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    // Stripes
+    ctx.fillStyle = 'rgba(120, 90, 50, 0.3)';
+    ctx.fillRect(cx - r, cy - 2, r * 2, 3);
+    ctx.fillRect(cx - r * 0.9, cy + r * 0.3, r * 1.8, 2);
+    // Front rings
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-0.25);
+    ctx.strokeStyle = 'rgba(230, 200, 140, 0.85)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 2.2, r * 0.5, 0, 0, Math.PI);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(200, 170, 110, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 1.8, r * 0.4, 0, 0, Math.PI);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawBigPlanet(planet) {
+    const cx = W * 0.85, cy = H * 0.13;
+    const r = Math.min(W, H) * (planet.bigPlanet.size || 0.18);
+    if (planet.name === 'Moon') {
+      // Earth from the Moon
+      const grad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+      grad.addColorStop(0, '#87ceeb');
+      grad.addColorStop(0.5, '#4169e1');
+      grad.addColorStop(1, '#1a3a7a');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+      // continents
+      ctx.fillStyle = 'rgba(76, 175, 80, 0.8)';
+      ctx.beginPath(); ctx.ellipse(cx - r * 0.3, cy - r * 0.1, r * 0.4, r * 0.25, 0.2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + r * 0.2, cy + r * 0.3, r * 0.3, r * 0.18, -0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + r * 0.4, cy - r * 0.4, r * 0.2, r * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+      // clouds
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.beginPath(); ctx.ellipse(cx - r * 0.1, cy + r * 0.2, r * 0.4, r * 0.1, 0.3, 0, Math.PI * 2); ctx.fill();
+    } else if (planet.name === 'Jupiter' && planet.bigPlanet.stripes) {
+      // Jupiter as big background planet
+      const grad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+      grad.addColorStop(0, '#f0d4a8');
+      grad.addColorStop(0.7, '#c08850');
+      grad.addColorStop(1, '#704020');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+      // Stripes
+      ctx.save();
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
+      const stripeColors = ['rgba(120,80,40,0.6)', 'rgba(220,180,140,0.5)', 'rgba(150,100,60,0.5)', 'rgba(240,200,160,0.5)'];
+      for (let i = 0; i < 8; i++) {
+        ctx.fillStyle = stripeColors[i % stripeColors.length];
+        const sy = cy - r + (i * r * 2 / 8);
+        ctx.fillRect(cx - r, sy, r * 2, r * 0.25);
+      }
+      // Great red spot
+      ctx.fillStyle = 'rgba(180, 60, 40, 0.7)';
+      ctx.beginPath();
+      ctx.ellipse(cx + r * 0.2, cy + r * 0.2, r * 0.18, r * 0.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawWorld() {
+    const planet = getPlanet(level);
+    // yards (ground)
+    ctx.fillStyle = planet.ground;
+    ctx.fillRect(0, 0, HOUSE_L_RIGHT, H);
+    ctx.fillRect(HOUSE_R_LEFT, 0, W - HOUSE_R_LEFT, H);
+
+    // texture for ground per planet
+    if (planet.name === 'Moon' || planet.name === 'Pluto') {
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      const off = worldY % 80;
+      for (let y = -80 + off; y < H; y += 80) {
+        ctx.beginPath(); ctx.arc(W * 0.08, y, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(W * 0.94, y + 30, 6, 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (planet.name === 'Mars') {
+      ctx.fillStyle = 'rgba(255,200,150,0.2)';
+      const off = worldY % 60;
+      for (let y = -60 + off; y < H; y += 60) {
+        ctx.fillRect(W * 0.05, y, 6, 6);
+        ctx.fillRect(W * 0.92, y + 25, 5, 5);
+      }
+    }
+
+    // sidewalks
+    ctx.fillStyle = planet.sidewalk;
+    ctx.fillRect(SIDEWALK_L, 0, ROAD_L - SIDEWALK_L, H);
+    ctx.fillRect(ROAD_R, 0, SIDEWALK_R - ROAD_R, H);
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+    ctx.lineWidth = 1;
+    const sidewalkOffset = worldY % 60;
+    for (let y = -60 + sidewalkOffset; y < H; y += 60) {
+      ctx.beginPath(); ctx.moveTo(SIDEWALK_L, y); ctx.lineTo(ROAD_L, y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ROAD_R, y); ctx.lineTo(SIDEWALK_R, y); ctx.stroke();
+    }
+
+    // road
+    ctx.fillStyle = planet.road;
+    ctx.fillRect(ROAD_L, 0, ROAD_W, H);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(ROAD_L + 2, 0, 3, H);
+    ctx.fillRect(ROAD_R - 5, 0, 3, H);
+    ctx.fillStyle = planet.divider;
+    const dashOffset = worldY % 60;
+    for (let y = -60 + dashOffset; y < H; y += 60) {
+      ctx.fillRect(LANE_DIVIDER - 2, y, 4, 30);
+    }
+  }
+
+  function drawHouses() {
+    const planet = getPlanet(level);
+    for (const h of houses) drawHouse(h, planet);
+    for (const t of trees) drawDecoration(t, planet);
+  }
+
+  function drawHouse(h, planet) {
+    const yardW = HOUSE_L_RIGHT;
+    const houseW = yardW * 0.7;
+    const houseH = 110;
+    const x = h.side === 'L' ? (yardW - houseW) / 2 : HOUSE_R_LEFT + (W - HOUSE_R_LEFT - houseW) / 2;
+    const y = h.y;
+
+    if (planet.houseStyle === 'house') {
+      ctx.fillStyle = '#a4a4a4';
+      if (h.side === 'L') ctx.fillRect(x + houseW * 0.4, y + houseH * 0.6, SIDEWALK_L - (x + houseW * 0.4), 24);
+      else { const wx = x + houseW * 0.2; ctx.fillRect(HOUSE_R_LEFT - (HOUSE_R_LEFT - wx) - 2, y + houseH * 0.6, HOUSE_R_LEFT - wx, 24); }
+      ctx.fillStyle = h.color;
+      ctx.fillRect(x, y, houseW, houseH);
+      ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, houseW, houseH);
+      ctx.fillStyle = h.roofColor;
+      ctx.beginPath();
+      ctx.moveTo(x - 8, y); ctx.lineTo(x + houseW + 8, y);
+      ctx.lineTo(x + houseW, y + houseH * 0.35); ctx.lineTo(x, y + houseH * 0.35);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#7f5539';
+      ctx.fillRect(x + houseW * 0.7, y + 4, 12, 16);
+      ctx.fillStyle = '#5d4037';
+      ctx.fillRect(x + houseW * h.doorX - 9, y + houseH - 26, 18, 26);
+      ctx.fillStyle = '#ffeb3b';
+      ctx.fillRect(x + houseW * h.doorX + 4, y + houseH - 15, 3, 3);
+      ctx.fillStyle = '#a8dadc';
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < h.windows; i++) {
+        const wx = x + houseW * (0.2 + i * 0.25), wy = y + houseH * 0.5;
+        ctx.fillRect(wx, wy, 14, 14); ctx.strokeRect(wx, wy, 14, 14);
+        ctx.beginPath(); ctx.moveTo(wx + 7, wy); ctx.lineTo(wx + 7, wy + 14);
+        ctx.moveTo(wx, wy + 7); ctx.lineTo(wx + 14, wy + 7); ctx.stroke();
+      }
+    } else if (planet.houseStyle === 'dome') {
+      // Lunar dome
+      ctx.fillStyle = '#cfd2d4';
+      ctx.beginPath();
+      ctx.arc(x + houseW / 2, y + houseH * 0.7, houseW * 0.55, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#7a8088'; ctx.lineWidth = 2; ctx.stroke();
+      // Dome glass shine
+      ctx.fillStyle = 'rgba(180, 220, 255, 0.5)';
+      ctx.beginPath();
+      ctx.arc(x + houseW / 2, y + houseH * 0.7, houseW * 0.45, Math.PI, Math.PI * 2);
+      ctx.fill();
+      // Antenna
+      ctx.strokeStyle = '#444'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x + houseW / 2, y + houseH * 0.7 - houseW * 0.55);
+      ctx.lineTo(x + houseW / 2, y - 8); ctx.stroke();
+      ctx.fillStyle = '#ff5252';
+      ctx.beginPath(); ctx.arc(x + houseW / 2, y - 8, 3, 0, Math.PI * 2); ctx.fill();
+      // Door
+      ctx.fillStyle = '#37474f';
+      ctx.fillRect(x + houseW / 2 - 8, y + houseH * 0.7 - 20, 16, 20);
+      ctx.fillStyle = '#5dade2';
+      ctx.fillRect(x + houseW / 2 - 5, y + houseH * 0.7 - 17, 10, 8);
+    } else if (planet.houseStyle === 'mars') {
+      // Red rock hut
+      ctx.fillStyle = '#8b3a1a';
+      ctx.beginPath();
+      ctx.moveTo(x, y + houseH);
+      ctx.lineTo(x + houseW * 0.15, y + houseH * 0.3);
+      ctx.lineTo(x + houseW * 0.5, y);
+      ctx.lineTo(x + houseW * 0.85, y + houseH * 0.3);
+      ctx.lineTo(x + houseW, y + houseH);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#5a2410'; ctx.lineWidth = 2; ctx.stroke();
+      // Door
+      ctx.fillStyle = '#2c1810';
+      ctx.beginPath();
+      ctx.arc(x + houseW / 2, y + houseH - 12, 12, Math.PI, Math.PI * 2);
+      ctx.fill();
+      // window
+      ctx.fillStyle = '#5dade2';
+      ctx.beginPath(); ctx.arc(x + houseW * 0.3, y + houseH * 0.6, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + houseW * 0.7, y + houseH * 0.6, 6, 0, Math.PI * 2); ctx.fill();
+      // Antenna
+      ctx.strokeStyle = '#888'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x + houseW / 2, y); ctx.lineTo(x + houseW / 2, y - 14); ctx.stroke();
+      ctx.fillStyle = '#ffeb3b';
+      ctx.beginPath(); ctx.arc(x + houseW / 2, y - 14, 2.5, 0, Math.PI * 2); ctx.fill();
+    } else if (planet.houseStyle === 'space') {
+      // Floating space platform with structure
+      ctx.fillStyle = '#546e7a';
+      roundRect(x, y + houseH * 0.5, houseW, houseH * 0.18, 4, true, false);
+      ctx.strokeStyle = '#263238'; ctx.lineWidth = 2;
+      roundRect(x, y + houseH * 0.5, houseW, houseH * 0.18, 4, false, true);
+      // Building on top
+      ctx.fillStyle = '#90a4ae';
+      roundRect(x + houseW * 0.15, y + houseH * 0.1, houseW * 0.7, houseH * 0.4, 6, true, true);
+      // Window strip
+      ctx.fillStyle = '#5dade2';
+      for (let i = 0; i < 3; i++) {
+        ctx.fillRect(x + houseW * 0.22 + i * houseW * 0.22, y + houseH * 0.2, houseW * 0.15, 6);
+      }
+      // Antenna lights
+      ctx.fillStyle = '#ff1744';
+      const blink = Math.sin(Date.now() / 200) > 0;
+      ctx.beginPath();
+      ctx.arc(x + houseW * 0.5, y + houseH * 0.05, blink ? 3 : 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#37474f'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x + houseW * 0.5, y + houseH * 0.1);
+      ctx.lineTo(x + houseW * 0.5, y); ctx.stroke();
+    } else if (planet.houseStyle === 'ice') {
+      // Ice dome / igloo
+      ctx.fillStyle = '#e0f7fa';
+      ctx.beginPath();
+      ctx.arc(x + houseW / 2, y + houseH * 0.8, houseW * 0.5, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#00838f'; ctx.lineWidth = 2; ctx.stroke();
+      // ice block lines
+      ctx.strokeStyle = 'rgba(0,131,143,0.5)'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(x + houseW / 2, y + houseH * 0.8, houseW * 0.35, Math.PI, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x + houseW * 0.2, y + houseH * 0.55);
+      ctx.lineTo(x + houseW * 0.8, y + houseH * 0.55);
+      ctx.stroke();
+      // tunnel door
+      ctx.fillStyle = '#1a3a4a';
+      ctx.beginPath();
+      ctx.arc(x + houseW / 2, y + houseH * 0.8 - 8, 12, Math.PI, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawDecoration(t, planet) {
+    if (planet.houseStyle === 'house') {
+      drawTreeNormal(t);
+    } else if (planet.name === 'Moon' || planet.name === 'Pluto') {
+      // Moon rocks
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath(); ctx.ellipse(t.x + 2, t.y + 2, t.r * 0.7, t.r * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#7a7a7a';
+      ctx.beginPath(); ctx.arc(t.x, t.y, t.r * 0.7, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5a5a5a';
+      ctx.beginPath(); ctx.arc(t.x - t.r * 0.2, t.y - t.r * 0.2, t.r * 0.3, 0, Math.PI * 2); ctx.fill();
+    } else if (planet.name === 'Mars') {
+      // Red rocks
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath(); ctx.ellipse(t.x + 2, t.y + 2, t.r * 0.7, t.r * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#a13a14';
+      ctx.beginPath(); ctx.arc(t.x, t.y, t.r * 0.7, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#7a2810';
+      ctx.beginPath(); ctx.arc(t.x - t.r * 0.2, t.y - t.r * 0.2, t.r * 0.3, 0, Math.PI * 2); ctx.fill();
+    } else if (planet.name === 'Uranus' || planet.name === 'Neptune') {
+      // Crystals
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.beginPath(); ctx.ellipse(t.x + 2, t.y + 4, t.r * 0.6, t.r * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#80deea';
+      ctx.beginPath();
+      ctx.moveTo(t.x, t.y - t.r);
+      ctx.lineTo(t.x + t.r * 0.5, t.y);
+      ctx.lineTo(t.x, t.y + t.r * 0.4);
+      ctx.lineTo(t.x - t.r * 0.5, t.y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#0097a7'; ctx.lineWidth = 1.5;
+      ctx.stroke();
+    } else {
+      // Strange alien plant for other planets
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.beginPath(); ctx.ellipse(t.x + 2, t.y + 4, t.r * 0.5, t.r * 0.25, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#8e24aa';
+      ctx.beginPath(); ctx.arc(t.x, t.y, t.r * 0.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ce93d8';
+      ctx.beginPath(); ctx.arc(t.x - 3, t.y - 4, t.r * 0.25, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(t.x + 4, t.y - 2, t.r * 0.25, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawTreeNormal(t) {
+    if (t.type === 'leafy') {
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.beginPath(); ctx.ellipse(t.x + 3, t.y + 3, t.r, t.r * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#388e3c';
+      ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#2e7d32';
+      ctx.beginPath(); ctx.arc(t.x - t.r * 0.3, t.y - t.r * 0.3, t.r * 0.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5d4037';
+      ctx.beginPath(); ctx.arc(t.x, t.y, t.r * 0.2, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.beginPath(); ctx.arc(t.x + 3, t.y + 3, t.r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1b5e20';
+      ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#2e7d32';
+      ctx.beginPath(); ctx.arc(t.x, t.y, t.r * 0.7, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#388e3c';
+      ctx.beginPath(); ctx.arc(t.x, t.y, t.r * 0.4, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawTruck() {
+    const x = truck.x;
+    const y = truck.y + Math.sin(truck.bouncePhase) * 1.2;
+    const w = truck.w, h = truck.h;
+    if (invulnTimer > 0 && Math.floor(invulnTimer / 100) % 2 === 0) ctx.globalAlpha = 0.4;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(truck.angle);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(3, h/2 + 4, w * 0.6, 6, 0, 0, Math.PI * 2); ctx.fill();
+    const contH = h * 0.62;
+    ctx.fillStyle = '#27ae60'; ctx.strokeStyle = '#1e6b3a'; ctx.lineWidth = 2.5;
+    roundRect(-w/2, -h/2 + h * 0.05, w, contH, 6, true, true);
+    ctx.strokeStyle = '#1e6b3a'; ctx.lineWidth = 1.5;
+    for (let i = 1; i < 4; i++) {
+      const ly = -h/2 + h * 0.05 + (contH / 4) * i;
+      ctx.beginPath(); ctx.moveTo(-w/2 + 3, ly); ctx.lineTo(w/2 - 3, ly); ctx.stroke();
+    }
+    ctx.fillStyle = '#1b3d1b';
+    roundRect(-w/2 + 4, -h/2 + h * 0.05 - 3, w - 8, 6, 2, true, false);
+    const cabH = h * 0.32;
+    ctx.fillStyle = '#e74c3c'; ctx.strokeStyle = '#922b1f'; ctx.lineWidth = 2.5;
+    roundRect(-w/2 + 2, h/2 - cabH, w - 4, cabH, 5, true, true);
+    ctx.fillStyle = '#87CEEB'; ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 1.5;
+    roundRect(-w/2 + 6, h/2 - cabH + 3, w - 12, cabH * 0.45, 3, true, true);
+    ctx.fillStyle = '#ffeb3b'; ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(-w/2 + 6, h/2 - 3, 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(w/2 - 6, h/2 - 3, 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(-w/2 - 3, -h/4 - 7, 8, 14);
+    ctx.fillRect(w/2 - 5, -h/4 - 7, 8, 14);
+    ctx.fillRect(-w/2 - 3, h/4 - 7, 8, 14);
+    ctx.fillRect(w/2 - 5, h/4 - 7, 8, 14);
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  function drawCar(e) {
+    const planet = getPlanet(level);
+    if (planet.carStyle === 'rover') return drawRover(e);
+    if (planet.carStyle === 'spaceship') return drawSpaceship(e);
+    drawCarNormal(e);
+  }
+
+  function drawCarNormal(e) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    if (!e.facingDown) ctx.rotate(Math.PI);
+    const w = e.w, h = e.h;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(2, h/2 + 3, w * 0.55, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = e.color; ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 2;
+    roundRect(-w/2, -h/2, w, h, 8, true, true);
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillRect(-w/2 + 3, -h * 0.2, w - 6, 2);
+    ctx.fillRect(-w/2 + 3, h * 0.18, w - 6, 2);
+    ctx.fillStyle = '#5dade2';
+    roundRect(-w/2 + 5, -h/2 + 6, w - 10, h * 0.3, 3, true, false);
+    ctx.fillStyle = '#3498db';
+    roundRect(-w/2 + 5, h/2 - h * 0.3 - 6, w - 10, h * 0.3, 3, true, false);
+    ctx.fillStyle = '#ffeb3b';
+    ctx.beginPath(); ctx.arc(-w/2 + 6, -h/2 + 3, 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(w/2 - 6, -h/2 + 3, 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(-w/2 - 2, -h/4 - 6, 6, 12);
+    ctx.fillRect(w/2 - 4, -h/4 - 6, 6, 12);
+    ctx.fillRect(-w/2 - 2, h/4 - 6, 6, 12);
+    ctx.fillRect(w/2 - 4, h/4 - 6, 6, 12);
+    ctx.restore();
+  }
+
+  function drawRover(e) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    if (!e.facingDown) ctx.rotate(Math.PI);
+    const w = e.w, h = e.h;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(2, h/2 + 3, w * 0.55, 5, 0, 0, Math.PI * 2); ctx.fill();
+    // chassis
+    ctx.fillStyle = '#cfd8dc'; ctx.strokeStyle = '#37474f'; ctx.lineWidth = 2;
+    roundRect(-w/2, -h/2 + 6, w, h - 12, 4, true, true);
+    // solar panels
+    ctx.fillStyle = '#1a237e';
+    ctx.fillRect(-w/2 + 4, -h/2 + 10, w - 8, 12);
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.5;
+    for (let i = 1; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-w/2 + 4 + (i * (w - 8) / 4), -h/2 + 10);
+      ctx.lineTo(-w/2 + 4 + (i * (w - 8) / 4), -h/2 + 22);
+      ctx.stroke();
+    }
+    // antenna dish
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#37474f'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, -h/2 + 30, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#37474f'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, -h/2 + 30); ctx.lineTo(0, -h/2 + 38); ctx.stroke();
+    // big chunky wheels
+    ctx.fillStyle = '#212121';
+    for (const wy of [-h/3, 0, h/3]) {
+      ctx.beginPath(); ctx.arc(-w/2 - 2, wy, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(w/2 + 2, wy, 7, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = '#888';
+    for (const wy of [-h/3, 0, h/3]) {
+      ctx.beginPath(); ctx.arc(-w/2 - 2, wy, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(w/2 + 2, wy, 3, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawSpaceship(e) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    if (!e.facingDown) ctx.rotate(Math.PI);
+    const w = e.w, h = e.h;
+    ctx.fillStyle = 'rgba(255,150,50,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(0, h/2 + 8, w * 0.3, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#cfd8dc'; ctx.strokeStyle = '#263238'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -h/2);
+    ctx.lineTo(w/2, -h * 0.1);
+    ctx.lineTo(w/2 - 4, h/2);
+    ctx.lineTo(-(w/2 - 4), h/2);
+    ctx.lineTo(-w/2, -h * 0.1);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    // window
+    ctx.fillStyle = '#5dade2'; ctx.strokeStyle = '#263238'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, -h/4, w * 0.18, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // fins
+    ctx.fillStyle = e.color;
+    ctx.beginPath();
+    ctx.moveTo(-w/2 + 2, h * 0.2); ctx.lineTo(-w/2 - 6, h/2); ctx.lineTo(-w/2 + 2, h/2);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(w/2 - 2, h * 0.2); ctx.lineTo(w/2 + 6, h/2); ctx.lineTo(w/2 - 2, h/2);
+    ctx.closePath(); ctx.fill();
+    // engine glow
+    ctx.fillStyle = '#ff5722';
+    ctx.fillRect(-w * 0.15, h/2 - 2, w * 0.3, 4);
+    ctx.restore();
+  }
+
+  function drawPerson(e) {
+    const planet = getPlanet(level);
+    if (planet.pedStyle === 'astronaut') return drawAstronaut(e);
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    const swing = Math.sin(e.walkPhase) * 4;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(2, e.h/2 + 2, e.w * 0.5, 3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = e.pantsColor;
+    ctx.fillRect(-6, 4, 4, 12 + swing);
+    ctx.fillRect(2, 4, 4, 12 - swing);
+    ctx.fillStyle = e.shirtColor;
+    roundRect(-9, -8, 18, 14, 3, true, false);
+    ctx.fillRect(-12, -6, 4, 10 - swing);
+    ctx.fillRect(8, -6, 4, 10 + swing);
+    ctx.fillStyle = '#fdbcb4';
+    ctx.beginPath(); ctx.arc(0, -14, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#3e2723';
+    ctx.beginPath(); ctx.arc(0, -16, 7, Math.PI, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawAstronaut(e) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    const swing = Math.sin(e.walkPhase) * 3;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(2, e.h/2 + 2, e.w * 0.5, 3, 0, 0, Math.PI * 2); ctx.fill();
+    // legs
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-6, 4, 5, 12 + swing);
+    ctx.fillRect(2, 4, 5, 12 - swing);
+    // boots
+    ctx.fillStyle = '#37474f';
+    ctx.fillRect(-7, 14 + swing, 7, 4);
+    ctx.fillRect(1, 14 - swing, 7, 4);
+    // body suit
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#37474f'; ctx.lineWidth = 1.5;
+    roundRect(-10, -8, 20, 14, 4, true, true);
+    // arms
+    ctx.fillRect(-13, -6, 5, 10 - swing);
+    ctx.fillRect(8, -6, 5, 10 + swing);
+    // helmet
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#37474f'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, -14, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // visor
+    ctx.fillStyle = '#1a237e';
+    ctx.beginPath(); ctx.arc(0, -13, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath(); ctx.arc(-2, -15, 2, 0, Math.PI * 2); ctx.fill();
+    // backpack hint
+    ctx.fillStyle = '#90a4ae';
+    ctx.fillRect(-9, -7, 4, 8);
+    ctx.restore();
+  }
+
+  function drawAlien(e) {
+    ctx.save();
+    ctx.translate(e.x, e.y + Math.sin(e.float) * 2);
+    const swing = Math.sin(e.walkPhase) * 3;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(2, e.h/2 + 4, e.w * 0.5, 3, 0, 0, Math.PI * 2); ctx.fill();
+    // legs
+    ctx.fillStyle = e.bodyColor;
+    ctx.fillRect(-5, 4, 4, 10 + swing);
+    ctx.fillRect(1, 4, 4, 10 - swing);
+    // body
+    ctx.fillStyle = e.bodyColor; ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 1.2;
+    roundRect(-10, -8, 20, 14, 6, true, true);
+    // arms (3 fingers visible at end)
+    ctx.fillStyle = e.bodyColor;
+    ctx.fillRect(-13, -6, 4, 11 - swing);
+    ctx.fillRect(9, -6, 4, 11 + swing);
+    // head (oval)
+    ctx.fillStyle = e.bodyColor; ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.ellipse(0, -15, 8, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // eyes
+    ctx.fillStyle = '#000';
+    if (e.eyeCount === 1) {
+      ctx.beginPath(); ctx.ellipse(0, -15, 3, 4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(0, -16, 1, 0, Math.PI * 2); ctx.fill();
+    } else if (e.eyeCount === 2) {
+      ctx.beginPath(); ctx.ellipse(-3, -15, 2, 3, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(3, -15, 2, 3, 0, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.ellipse(-4, -15, 1.5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, -16, 1.5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(4, -15, 1.5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    // antennae
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(-3, -22); ctx.lineTo(-5, -28); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(3, -22); ctx.lineTo(5, -28); ctx.stroke();
+    ctx.fillStyle = '#ffeb3b';
+    ctx.beginPath(); ctx.arc(-5, -28, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(5, -28, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawDog(e) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    if (e.vx < 0) ctx.scale(-1, 1);
+    const bob = Math.sin(e.runPhase) * 1.5;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(2, e.h/2 + 2, e.w * 0.5, 3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = e.bodyColor; ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 1.5;
+    roundRect(-16, -8 + bob, 28, 14, 7, true, true);
+    ctx.beginPath();
+    ctx.moveTo(-16, -4 + bob);
+    ctx.quadraticCurveTo(-22, -10 + bob, -20, -14 + bob);
+    ctx.lineWidth = 4; ctx.strokeStyle = e.bodyColor; ctx.stroke();
+    ctx.fillStyle = e.bodyColor;
+    ctx.beginPath(); ctx.arc(14, -4 + bob, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#3e2723';
+    ctx.beginPath(); ctx.ellipse(11, -10 + bob, 3, 5, 0.3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(16, -5 + bob, 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(20, -3 + bob, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = e.bodyColor;
+    const leg1 = Math.sin(e.runPhase) * 3, leg2 = Math.sin(e.runPhase + Math.PI) * 3;
+    ctx.fillRect(-12, 4 + bob, 3, 6 + leg1);
+    ctx.fillRect(-4, 4 + bob, 3, 6 + leg2);
+    ctx.fillRect(4, 4 + bob, 3, 6 + leg1);
+    ctx.fillRect(10, 4 + bob, 3, 6 + leg2);
+    ctx.restore();
+  }
+
+  function drawChicken(e) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    if (e.vx < 0) ctx.scale(-1, 1);
+    const bob = Math.sin(e.headBob) * 2;
+    const legSwing = Math.sin(e.walkPhase) * 4;
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(0, e.h/2, e.w * 0.5, 3, 0, 0, Math.PI * 2); ctx.fill();
+    // legs
+    ctx.strokeStyle = '#f57c00'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-3, 4); ctx.lineTo(-3 + legSwing, 12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(3, 4); ctx.lineTo(3 - legSwing, 12); ctx.stroke();
+    // feet
+    ctx.fillStyle = '#f57c00';
+    ctx.beginPath(); ctx.arc(-3 + legSwing, 13, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(3 - legSwing, 13, 2, 0, Math.PI * 2); ctx.fill();
+    // body
+    ctx.fillStyle = e.bodyColor; ctx.strokeStyle = '#666'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(0, -2, 11, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // wing
+    ctx.fillStyle = '#e0e0e0';
+    ctx.beginPath(); ctx.ellipse(-2, -1, 5, 6, 0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#999'; ctx.stroke();
+    // tail feathers
+    ctx.fillStyle = e.bodyColor;
+    ctx.beginPath();
+    ctx.moveTo(-9, -4);
+    ctx.lineTo(-15, -10 + bob * 0.3);
+    ctx.lineTo(-13, -2);
+    ctx.lineTo(-11, -8 + bob * 0.3);
+    ctx.lineTo(-10, 0);
+    ctx.closePath();
+    ctx.fill();
+    // head
+    ctx.fillStyle = e.bodyColor; ctx.strokeStyle = '#666'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(8, -8 + bob, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // comb
+    ctx.fillStyle = '#e53935';
+    ctx.beginPath();
+    ctx.moveTo(7, -12 + bob);
+    ctx.lineTo(8, -15 + bob);
+    ctx.lineTo(9, -12 + bob);
+    ctx.lineTo(10, -15 + bob);
+    ctx.lineTo(11, -12 + bob);
+    ctx.closePath();
+    ctx.fill();
+    // wattle
+    ctx.fillStyle = '#e53935';
+    ctx.beginPath(); ctx.arc(9, -5 + bob, 2, 0, Math.PI * 2); ctx.fill();
+    // beak
+    ctx.fillStyle = '#fb8c00';
+    ctx.beginPath();
+    ctx.moveTo(12, -8 + bob); ctx.lineTo(16, -7 + bob); ctx.lineTo(12, -6 + bob);
+    ctx.closePath();
+    ctx.fill();
+    // eye
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(10, -9 + bob, 1, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawFrog(e) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    if (e.hopDir < 0) ctx.scale(-1, 1);
+    // Hop animation: scale and bounce
+    let hopScaleY = 1, hopScaleX = 1, hopOffset = 0;
+    if (e.hopState === 'hop') {
+      hopOffset = -Math.sin(e.hopProgress * Math.PI) * 14;
+      hopScaleY = 1 + Math.sin(e.hopProgress * Math.PI) * 0.2;
+      hopScaleX = 1 - Math.sin(e.hopProgress * Math.PI) * 0.1;
+    } else {
+      // squash before hop
+      const squash = Math.min(1, e.hopTimer / e.hopWaitDuration);
+      hopScaleY = 1 - squash * 0.15;
+      hopScaleX = 1 + squash * 0.1;
+    }
+    ctx.translate(0, hopOffset);
+    ctx.scale(hopScaleX, hopScaleY);
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(0, 11 - hopOffset * 0.3, 12 - Math.abs(hopOffset) * 0.4, 3, 0, 0, Math.PI * 2); ctx.fill();
+    // back legs (bent)
+    ctx.fillStyle = '#388e3c';
+    ctx.beginPath();
+    ctx.ellipse(-9, 6, 6, 4, 0.3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(9, 6, 6, 4, -0.3, 0, Math.PI * 2); ctx.fill();
+    // body
+    ctx.fillStyle = '#43a047'; ctx.strokeStyle = '#1b5e20'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(0, 0, 12, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // belly
+    ctx.fillStyle = '#c5e1a5';
+    ctx.beginPath(); ctx.ellipse(0, 4, 8, 4, 0, 0, Math.PI * 2); ctx.fill();
+    // spots
+    ctx.fillStyle = '#1b5e20';
+    ctx.beginPath(); ctx.arc(-5, -3, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(4, -2, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, 1.5, 0, Math.PI * 2); ctx.fill();
+    // eyes (popping out of head)
+    ctx.fillStyle = '#43a047';
+    ctx.beginPath(); ctx.arc(-5, -8, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(5, -8, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(-5, -8, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(5, -8, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(-5, -8, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(5, -8, 1.5, 0, Math.PI * 2); ctx.fill();
+    // smile
+    ctx.strokeStyle = '#1b5e20'; ctx.lineWidth = 1; ctx.beginPath();
+    ctx.arc(0, 0, 4, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawUFO(e) {
+    ctx.save();
+    ctx.translate(e.x, e.y + Math.sin(e.bobPhase) * 3);
+    // light beam
+    ctx.fillStyle = 'rgba(0, 255, 200, ' + (0.15 + Math.sin(e.lightPulse) * 0.05) + ')';
+    ctx.beginPath();
+    ctx.moveTo(-e.w * 0.2, 4);
+    ctx.lineTo(-e.w * 0.5, e.h * 4);
+    ctx.lineTo(e.w * 0.5, e.h * 4);
+    ctx.lineTo(e.w * 0.2, 4);
+    ctx.closePath();
+    ctx.fill();
+    // bottom saucer
+    ctx.fillStyle = '#9e9e9e'; ctx.strokeStyle = '#37474f'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, e.w / 2, e.h * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    // top saucer (lighter)
+    ctx.fillStyle = '#cfd8dc';
+    ctx.beginPath();
+    ctx.ellipse(0, -2, e.w * 0.4, e.h * 0.3, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#37474f'; ctx.lineWidth = 1.5; ctx.stroke();
+    // dome
+    ctx.fillStyle = '#80deea';
+    ctx.beginPath();
+    ctx.arc(0, -3, e.w * 0.2, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#37474f'; ctx.lineWidth = 1.5; ctx.stroke();
+    // dome shine
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(-e.w * 0.06, -8, 3, 2, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    // lights along bottom
+    const lightCount = 5;
+    for (let i = 0; i < lightCount; i++) {
+      const a = (i / (lightCount - 1)) * Math.PI - Math.PI;
+      const lx = Math.cos(a) * (e.w / 2 - 4);
+      const blink = Math.sin(e.lightPulse + i) > 0;
+      ctx.fillStyle = blink ? '#ff5722' : '#ffeb3b';
+      ctx.beginPath(); ctx.arc(lx, 4, 2, 0, Math.PI * 2); ctx.fill();
+    }
+    // alien inside dome
+    ctx.fillStyle = '#7cfc00';
+    ctx.beginPath(); ctx.ellipse(0, -8, 3, 4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(0, -9, 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawAsteroid(e) {
+    if (!e.exploded) {
+      const t = e.fallProgress / e.fallDuration;
+      const targetSize = 30 + t * 30;
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,0,0,' + (0.2 + Math.sin(e.fallProgress / 80) * 0.15) + ')';
+      ctx.beginPath();
+      ctx.ellipse(e.targetX, e.targetY, targetSize, targetSize * 0.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,0,0,0.7)'; ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(e.targetX, e.targetY, targetSize, targetSize * 0.4, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      const visualY = -100 + (e.targetY + 100) * t;
+      const scale = 0.4 + t * 0.8;
+      ctx.translate(e.targetX, visualY);
+      ctx.rotate(e.rotation);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = 'rgba(255,150,50,0.7)';
+      ctx.beginPath(); ctx.ellipse(0, -30, 18, 30, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,235,59,0.8)';
+      ctx.beginPath(); ctx.ellipse(0, -20, 12, 20, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5d4037'; ctx.strokeStyle = '#2c1810'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-22, -5); ctx.lineTo(-15, -20); ctx.lineTo(5, -22);
+      ctx.lineTo(22, -10); ctx.lineTo(20, 8); ctx.lineTo(8, 22);
+      ctx.lineTo(-12, 18); ctx.lineTo(-22, 5);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#3e2723';
+      ctx.beginPath(); ctx.arc(-5, -5, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(8, 5, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(-10, 10, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    } else {
+      const t = e.explodeTime / 600;
+      const r = 20 + t * 60;
+      ctx.save();
+      ctx.globalAlpha = 1 - t;
+      ctx.fillStyle = '#ff6b35';
+      ctx.beginPath(); ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffeb3b';
+      ctx.beginPath(); ctx.arc(e.x, e.y, r * 0.6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(e.x, e.y, r * 0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawGarbage(e) {
+    const wob = Math.sin(e.wobble) * 1;
+    ctx.save();
+    ctx.translate(e.x, e.y + wob);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(2, 16, 18, 4, 0, 0, Math.PI * 2); ctx.fill();
+    if (e.bagType === 'bag') {
+      ctx.fillStyle = '#1a1a1a'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-14, 14); ctx.quadraticCurveTo(-18, -4, -8, -14);
+      ctx.lineTo(8, -14); ctx.quadraticCurveTo(18, -4, 14, 14);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#444'; ctx.fillRect(-4, -16, 8, 4);
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(-8, -4); ctx.quadraticCurveTo(-10, 6, -6, 12); ctx.stroke();
+    } else if (e.bagType === 'can') {
+      ctx.fillStyle = '#546e7a'; ctx.strokeStyle = '#263238'; ctx.lineWidth = 1.5;
+      roundRect(-12, -12, 24, 28, 3, true, true);
+      ctx.fillStyle = '#37474f';
+      roundRect(-14, -16, 28, 6, 2, true, true);
+      ctx.strokeStyle = '#37474f'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-12, -4); ctx.lineTo(12, -4);
+      ctx.moveTo(-12, 4); ctx.lineTo(12, 4); ctx.stroke();
+    } else {
+      ctx.fillStyle = '#1a1a1a';
+      ctx.beginPath();
+      ctx.arc(-6, 4, 8, 0, Math.PI * 2);
+      ctx.arc(4, 2, 9, 0, Math.PI * 2);
+      ctx.arc(-2, -6, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = '#ffeb3b';
+      ctx.beginPath(); ctx.ellipse(8, -4, 5, 2, 0.5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawHeart(e) {
+    ctx.save();
+    ctx.translate(e.x, e.y + Math.sin(e.bob) * 3);
+    const pulse = 1 + Math.sin(e.pulse) * 0.12;
+    ctx.scale(pulse, pulse);
+    ctx.shadowColor = '#ff4081';
+    ctx.shadowBlur = 18;
+    // sparkle background
+    ctx.strokeStyle = 'rgba(255, 192, 203, 0.6)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + e.pulse * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * 22, Math.sin(a) * 22);
+      ctx.lineTo(Math.cos(a) * 26, Math.sin(a) * 26);
+      ctx.stroke();
+    }
+    // heart shape
+    ctx.fillStyle = '#ff4081';
+    ctx.strokeStyle = '#c2185b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 14);
+    ctx.bezierCurveTo(-18, 2, -18, -12, -8, -12);
+    ctx.bezierCurveTo(-3, -12, 0, -7, 0, -4);
+    ctx.bezierCurveTo(0, -7, 3, -12, 8, -12);
+    ctx.bezierCurveTo(18, -12, 18, 2, 0, 14);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // shine
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath();
+    ctx.ellipse(-6, -6, 3, 5, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawStar(e) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    ctx.rotate(e.rotation);
+    const pulse = 1 + Math.sin(e.pulse) * 0.1;
+    ctx.scale(pulse, pulse);
+    ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 20;
+    ctx.fillStyle = '#ffd700'; ctx.strokeStyle = '#f57c00'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+      const x = Math.cos(angle) * 18, y = Math.sin(angle) * 18;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      const ia = angle + Math.PI / 5;
+      ctx.lineTo(Math.cos(ia) * 8, Math.sin(ia) * 8);
+    }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  function roundRect(x, y, w, h, r, fill, stroke) {
+    if (w < r * 2) r = w / 2;
+    if (h < r * 2) r = h / 2;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+    if (fill) ctx.fill();
+    if (stroke) ctx.stroke();
+  }
+
+  function drawParticles() {
+    for (const p of particles) {
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function draw() {
+    ctx.save();
+    if (cameraShake > 0) {
+      ctx.translate((Math.random() - 0.5) * cameraShake, (Math.random() - 0.5) * cameraShake);
+    }
+    ctx.clearRect(0, 0, W, H);
+    drawSky();
+    drawWorld();
+    drawHouses();
+    const sorted = entities.slice().sort((a, b) => a.y - b.y);
+    for (const e of sorted) {
+      if (e.type === 'car') drawCar(e);
+      else if (e.type === 'person') drawPerson(e);
+      else if (e.type === 'astronaut') drawAstronaut(e);
+      else if (e.type === 'alien') drawAlien(e);
+      else if (e.type === 'dog') drawDog(e);
+      else if (e.type === 'chicken') drawChicken(e);
+      else if (e.type === 'frog') drawFrog(e);
+      else if (e.type === 'ufo') drawUFO(e);
+      else if (e.type === 'asteroid') drawAsteroid(e);
+      else if (e.type === 'garbage') drawGarbage(e);
+      else if (e.type === 'star') drawStar(e);
+      else if (e.type === 'heart') drawHeart(e);
+    }
+    if (state === STATE.PLAYING) drawTruck();
+    drawParticles();
+    ctx.restore();
+  }
+
+  function loop(t) {
+    const dt = Math.min(50, t - lastTime || 16);
+    lastTime = t;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+  resize();
+  initWorld();
+  requestAnimationFrame(loop);
+
+  startBtn.addEventListener('click', startGame);
+  playAgainBtn.addEventListener('click', startGame);
+
+  function pauseGame() {
+    if (state !== STATE.PLAYING || paused) return;
+    paused = true;
+    // Release any held keys so the truck doesn't drift while paused
+    for (const k in keys) keys[k] = false;
+    document.querySelectorAll('.ctrl-btn.pressed').forEach(b => b.classList.remove('pressed'));
+    pauseScreen.classList.remove('hidden');
+    pauseBtn.textContent = '▶';
+    pauseBtn.setAttribute('aria-label', 'Resume');
+  }
+  function resumeGame() {
+    if (!paused) return;
+    paused = false;
+    pauseScreen.classList.add('hidden');
+    pauseBtn.textContent = '⏸';
+    pauseBtn.setAttribute('aria-label', 'Pause');
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  }
+  function togglePause() { paused ? resumeGame() : pauseGame(); }
+
+  pauseBtn.addEventListener('click', togglePause);
+  resumeBtn.addEventListener('click', resumeGame);
+  restartBtn.addEventListener('click', () => { resumeGame(); startGame(); });
+
+  // Keyboard shortcut: P or Escape
+  window.addEventListener('keydown', e => {
+    if (state !== STATE.PLAYING) return;
+    if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+      e.preventDefault();
+      togglePause();
+    }
+  });
+
+  // Auto-pause when the tab/page is hidden (e.g., switching apps on iPad)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && state === STATE.PLAYING && !paused) pauseGame();
+  });
+
+  if (highScore > 0) {
+    const card = startScreen.querySelector('.card');
+    const hs = document.createElement('p');
+    hs.innerHTML = '🏆 High Score: <b>' + highScore + '</b>';
+    card.insertBefore(hs, startBtn);
+  }
+})();
+</script>
+</body>
+</html>
