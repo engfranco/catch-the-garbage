@@ -14,6 +14,33 @@ Just open the link in any modern browser — desktop, tablet, or phone — and s
 
 ![Gameplay](screenshots/gameplay.png)
 
+## New: 3D Version
+
+**[https://engfranco.github.io/catch-the-garbage/v2/](https://engfranco.github.io/catch-the-garbage/v2/)**
+
+The same game, rebuilt as a 3D neighborhood seen from a camera behind the truck. It keeps every pickup, hazard, planet and control from the classic version and adds:
+
+- A real 3D street with houses, trees, street lamps, mailboxes and hedges that stream past
+- Real-time lighting and shadows, a sky dome, fog and image-based reflections on the vehicles
+- Eight planets with their own skies, ground textures, buildings (domes, rock huts, floating platforms, igloos), vehicles (cars, rovers, hovering spaceships) and inhabitants
+- Jupiter filling the sky, Earth seen from the Moon, Saturn's rings arching overhead, and night-time planets where the truck's headlights and the windows light up
+- Procedurally generated textures for asphalt, sidewalks, grass, regolith, dust, sand and ice (no image files)
+- Tap-to-steer on touch screens: tap or drag where you want the truck to go, or use the on-screen buttons
+- Three difficulty routes chosen on the start screen and remembered between sessions:
+  - 🌱 **Sunday Drive** for little kids: slow, five lives, gentle traffic, long safety time after a bump
+  - 🚛 **Regular Route**: the classic balance
+  - 🔥 **Rush Hour**: fast traffic, more hazards, no mercy
+  
+  Each route keeps its own high score.
+
+The 3D version lives in the `v2/` folder and uses [Three.js](https://threejs.org/) (r185, bundled in `v2/lib/`, MIT licensed). There is still no build step. Because it is written as JavaScript modules, it has to be served over `http(s)://` (GitHub Pages or the local server below); double-clicking `v2/index.html` will not work in most browsers.
+
+Tips: add `?level=N` to the URL to start on a later planet (`v2/?level=5` starts on Saturn), or `?mode=easy|medium|hard` to pre-select a route, e.g. `v2/?mode=easy` for a link you can hand straight to a young player.
+
+![3D gameplay on Earth](screenshots/gameplay-3d-earth.jpg)
+
+![3D gameplay on Jupiter](screenshots/gameplay-3d-jupiter.jpg)
+
 ## Features
 
 - Top-down driving gameplay tuned for very young players
@@ -63,7 +90,7 @@ For iPad "Add to Home Screen" using a local copy, you'll need to serve the file 
    The first time you run it, macOS may warn that it's from an unidentified developer. Right-click the file, choose **Open**, then confirm.
 
 3. A Terminal window opens and prints a URL like `http://192.168.1.42:8000/`.
-4. Open that URL in Safari on your iPad. Tap **Share** → **Add to Home Screen**.
+4. Open that URL in Safari on your iPad (add `/v2/` at the end for the 3D version). Tap **Share** → **Add to Home Screen**.
 
 Leave the Terminal window open while playing. Closing it stops the server.
 
@@ -99,7 +126,16 @@ Tested in recent versions of Safari, Chrome, Firefox, and Edge on both desktop a
 ## Project Structure
 
 ```
-index.html                   The game (single self-contained file)
+index.html                   The classic 2D game (single self-contained file)
+v2/                          The 3D version
+  index.html                 Page, styles and UI overlays
+  src/main.js                Game loop, input, spawning, collisions, HUD
+  src/world.js               Sky, lights, ground, recycling scenery
+  src/models.js              Procedural 3D models (truck, cars, people, animals, houses…)
+  src/textures.js            Procedurally generated textures
+  src/config.js              World layout and the eight planet definitions
+  src/audio.js               Procedural sound effects
+  lib/                       Three.js r185 (vendored, MIT)
 start-ipad-server.command    macOS one-click local server launcher
 screenshots/                 Screenshots used in this README
 README.md                    This file
@@ -108,7 +144,8 @@ README.md                    This file
 ## Tech Notes
 
 - Pure HTML, CSS, and vanilla JavaScript. No frameworks, no build step.
-- Rendering is done on a single 2D canvas, scaled to the device pixel ratio.
+- The classic game renders on a single 2D canvas, scaled to the device pixel ratio.
+- The 3D version renders with WebGL through Three.js: shadow-mapped sunlight, a gradient sky dome, fog, and a small environment map for reflections. Scenery is built from a handful of shared unit geometries and merged per material to keep draw calls low on tablets.
 - Audio is generated procedurally with the Web Audio API (no sound files).
 - iOS-specific meta tags enable the fullscreen home-screen experience.
 - High scores persist via `localStorage`.
