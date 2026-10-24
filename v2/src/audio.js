@@ -42,6 +42,11 @@ export const sfx = {
   cluck()    { beep(800, 0.05, 'square', 0.08); setTimeout(() => beep(600, 0.07, 'square', 0.08), 50); },
   ribbit()   { beep(180, 0.08, 'sawtooth', 0.1); setTimeout(() => beep(220, 0.1, 'sawtooth', 0.1), 80); },
   ufo()      { beep(1200, 0.3, 'sine', 0.06); setTimeout(() => beep(800, 0.3, 'sine', 0.06), 150); },
+  steal()    { beep(620, 0.1, 'sawtooth', 0.13); setTimeout(() => beep(440, 0.1, 'sawtooth', 0.13), 100); setTimeout(() => beep(300, 0.22, 'sawtooth', 0.13), 200); },
+  escaped()  { beep(240, 0.25, 'triangle', 0.12); setTimeout(() => beep(180, 0.4, 'triangle', 0.12), 230); },
+  chitter()  { for (let i = 0; i < 5; i++) setTimeout(() => beep(900 + (i % 2) * 300, 0.05, 'square', 0.07), i * 60); },
+  spray()    { noise(0.35, 0.1); beep(1400, 0.3, 'sine', 0.04); },
+  growl()    { beep(70, 0.5, 'sawtooth', 0.2); setTimeout(() => beep(55, 0.4, 'sawtooth', 0.18), 150); noise(0.3, 0.06); },
   heart() {
     beep(523, 0.08, 'sine', 0.18);
     setTimeout(() => beep(659, 0.08, 'sine', 0.18), 80);

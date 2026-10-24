@@ -26,6 +26,7 @@ The same game, rebuilt as a 3D neighborhood seen from a camera behind the truck.
 - Jupiter filling the sky, Earth seen from the Moon, Saturn's rings arching overhead, and night-time planets where the truck's headlights and the windows light up
 - Procedurally generated textures for asphalt, sidewalks, grass, regolith, dust, sand and ice (no image files)
 - Tap-to-steer on touch screens: tap or drag where you want the truck to go, or use the on-screen buttons
+- Heart thieves: raccoons (1 ❤️), skunks (2 ❤️) and trash monsters (3 ❤️) sneak up on the truck, grab hearts and run off down the road with them floating over their heads. Push forward and catch them to get the hearts back with bonus points; if they get away, the hearts are gone. Thieves never take your last heart.
 - Three difficulty routes chosen on the start screen and remembered between sessions:
   - 🌱 **Sunday Drive** for little kids: slow, five lives, gentle traffic, long safety time after a bump
   - 🚛 **Regular Route**: the classic balance

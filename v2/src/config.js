@@ -27,7 +27,9 @@ export const DIFFICULTIES = {
     trafficSpeed: 0.7, crosserSpeed: 0.7,   // oncoming traffic and road-crossers move slower
     invuln: 3000,                           // ms of safety after a hit
     levelDuration: 30000, levelRamp: 0.07,  // slower planet changes, gentler ramp-up
-    asteroidAhead: [-38, -16]               // asteroids land this far ahead of the truck
+    asteroidAhead: [-38, -16],              // asteroids land this far ahead of the truck
+    thiefRate: 1.7, chaseTime: 12,          // thieves are rarer and you get longer to catch them
+    thiefRecede: 1.3, monsterMinLevel: 3    // how fast a fleeing thief pulls away; trash monsters appear from this level
   },
   medium: {
     key: 'medium', name: 'Regular Route', emoji: '🚛',
@@ -36,7 +38,8 @@ export const DIFFICULTIES = {
     hazardRate: 1, pickupRate: 1, heartRate: 1, asteroidRate: 1, ufoRate: 1,
     sameLaneChance: 0.3, trafficSpeed: 1, crosserSpeed: 1,
     invuln: 2000, levelDuration: 22000, levelRamp: 0.13,
-    asteroidAhead: [-30, -8]
+    asteroidAhead: [-30, -8],
+    thiefRate: 1, chaseTime: 9, thiefRecede: 2.0, monsterMinLevel: 2
   },
   hard: {
     key: 'hard', name: 'Rush Hour', emoji: '🔥',
@@ -45,7 +48,8 @@ export const DIFFICULTIES = {
     hazardRate: 0.72, pickupRate: 1, heartRate: 1.5, asteroidRate: 0.8, ufoRate: 0.8,
     sameLaneChance: 0.35, trafficSpeed: 1.25, crosserSpeed: 1.25,
     invuln: 1500, levelDuration: 18000, levelRamp: 0.17,
-    asteroidAhead: [-26, -6]
+    asteroidAhead: [-26, -6],
+    thiefRate: 0.75, chaseTime: 7, thiefRecede: 2.8, monsterMinLevel: 1
   }
 };
 

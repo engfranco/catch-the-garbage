@@ -478,6 +478,114 @@ export function buildFrog() {
 }
 
 // =====================================================================
+// Heart thieves: raccoon (1), skunk (2), trash monster (3). Forward is -z.
+// =====================================================================
+export function buildRaccoon() {
+  const g = new THREE.Group();
+  const fur = mat(0x7d7d82, { roughness: 0.9 });
+  const dark = mat(0x26262a, { roughness: 0.9 });
+  const light = mat(0xdadada, { roughness: 0.9 });
+  g.add(part(G.capsule, fur, { y: 0.42, rx: Math.PI / 2, sx: 0.46, sy: 0.55, sz: 0.46 }));
+  g.add(part(G.sphere, fur, { y: 0.6, z: -0.52, s: 0.4 }));
+  g.add(part(G.box, dark, { y: 0.64, z: -0.7, sx: 0.42, sy: 0.14, sz: 0.1, cast: false }));
+  g.add(part(G.box, light, { y: 0.52, z: -0.74, sx: 0.16, sy: 0.12, sz: 0.16, cast: false }));
+  g.add(part(G.sphere, M.BLACK, { y: 0.54, z: -0.83, s: 0.07, cast: false }));
+  for (const sgn of [-1, 1]) {
+    g.add(part(G.sphere, M.WHITE, { x: sgn * 0.1, y: 0.64, z: -0.72, s: 0.08, cast: false }));
+    g.add(part(G.sphere, M.BLACK, { x: sgn * 0.1, y: 0.64, z: -0.77, s: 0.04, cast: false }));
+    g.add(part(G.box, dark, { x: sgn * 0.14, y: 0.8, z: -0.5, sx: 0.1, sy: 0.14, sz: 0.06, rz: sgn * 0.3, cast: false }));
+  }
+  const tail = new THREE.Group(); tail.position.set(0, 0.5, 0.45); tail.rotation.x = -0.95;
+  for (let i = 0; i < 5; i++) tail.add(part(G.cyl, i % 2 ? dark : fur, { y: i * 0.14 + 0.07, sx: 0.22 - i * 0.015, sy: 0.14, sz: 0.22 - i * 0.015 }));
+  g.add(tail);
+  const legs = [];
+  for (const [x, z] of [[-0.16, -0.3], [0.16, -0.3], [-0.16, 0.3], [0.16, 0.3]]) {
+    const leg = new THREE.Group(); leg.position.set(x, 0.32, z);
+    leg.add(part(G.box, dark, { y: -0.16, sx: 0.12, sy: 0.32, sz: 0.12 }));
+    g.add(leg); legs.push(leg);
+  }
+  mergeChildren(g); mergeChildren(tail);
+  return { group: g, legs, body: null, w: 1.1, l: 0.6 };
+}
+
+export function buildSkunk() {
+  const g = new THREE.Group();
+  const black = mat(0x141416, { roughness: 0.9 });
+  const white = mat(0xf2f2f2, { roughness: 0.9 });
+  g.add(part(G.capsule, black, { y: 0.38, rx: Math.PI / 2, sx: 0.42, sy: 0.5, sz: 0.42 }));
+  g.add(part(G.box, white, { y: 0.585, z: 0.05, sx: 0.14, sy: 0.04, sz: 0.9, cast: false }));
+  g.add(part(G.sphere, black, { y: 0.5, z: -0.5, s: 0.34 }));
+  g.add(part(G.box, white, { y: 0.66, z: -0.5, sx: 0.08, sy: 0.03, sz: 0.3, cast: false }));
+  for (const sgn of [-1, 1]) {
+    g.add(part(G.sphere, M.WHITE, { x: sgn * 0.09, y: 0.55, z: -0.66, s: 0.06, cast: false }));
+    g.add(part(G.sphere, M.BLACK, { x: sgn * 0.09, y: 0.55, z: -0.7, s: 0.03, cast: false }));
+    g.add(part(G.sphere, black, { x: sgn * 0.12, y: 0.68, z: -0.45, s: 0.08, cast: false }));
+  }
+  g.add(part(G.sphere, mat(0xe57373, { roughness: 0.6 }), { y: 0.47, z: -0.69, s: 0.06, cast: false }));
+  const tail = new THREE.Group(); tail.position.set(0, 0.52, 0.42); tail.rotation.x = -1.1;
+  tail.add(part(G.sphere, black, { y: 0.5, sx: 0.55, sy: 1.05, sz: 0.45 }));
+  tail.add(part(G.sphere, white, { y: 0.52, z: -0.15, sx: 0.16, sy: 0.9, sz: 0.2, cast: false }));
+  mergeChildren(tail);
+  g.add(tail);
+  const legs = [];
+  for (const [x, z] of [[-0.15, -0.28], [0.15, -0.28], [-0.15, 0.28], [0.15, 0.28]]) {
+    const leg = new THREE.Group(); leg.position.set(x, 0.3, z);
+    leg.add(part(G.box, black, { y: -0.15, sx: 0.11, sy: 0.3, sz: 0.11 }));
+    g.add(leg); legs.push(leg);
+  }
+  mergeChildren(g);
+  return { group: g, legs, tail, w: 1.0, l: 0.6 };
+}
+
+export function buildTrashMonster() {
+  const g = new THREE.Group();
+  const body = new THREE.Group();
+  const trash = mat(0x3f4d33, { roughness: 0.85 });
+  const trashDark = mat(0x262e1e, { roughness: 0.9 });
+  const lump = (geo, x, y, z, sx, sy, sz, m) => {
+    const b = new THREE.Mesh(geo, m); b.castShadow = true; b.receiveShadow = true;
+    b.position.set(x, y, z); b.scale.set(sx, sy, sz); body.add(b);
+  };
+  lump(bagGeos[0], 0, 0.85, 0, 2.3, 1.7, 2.1, trash);
+  lump(bagGeos[1], 0.55, 1.65, 0.1, 1.5, 1.3, 1.4, trashDark);
+  lump(bagGeos[2], -0.6, 1.55, -0.15, 1.3, 1.2, 1.2, trash);
+  for (const sgn of [-1, 1]) {
+    body.add(part(G.sphere, M.WHITE, { x: sgn * 0.4, y: 1.8, z: -0.8, s: 0.44, cast: false }));
+    body.add(part(G.sphere, M.BLACK, { x: sgn * 0.4, y: 1.8, z: -1.0, s: 0.2, cast: false }));
+    body.add(part(G.box, trashDark, { x: sgn * 0.4, y: 2.08, z: -0.9, sx: 0.5, sy: 0.1, sz: 0.1, rz: -sgn * 0.45, cast: false }));
+    const arm = new THREE.Group(); arm.position.set(sgn * 1.05, 1.15, 0);
+    arm.add(part(G.sphere, trash, { x: sgn * 0.25, y: -0.25, z: -0.35, s: 0.5 }));
+    arm.add(part(G.sphere, trashDark, { x: sgn * 0.35, y: -0.4, z: -0.6, s: 0.28, cast: false }));
+    body.add(arm);
+  }
+  body.add(part(G.box, trashDark, { y: 1.2, z: -0.95, sx: 0.95, sy: 0.36, sz: 0.2, cast: false }));
+  for (const x of [-0.3, 0, 0.3]) body.add(part(G.box, M.WHITE, { x, y: 1.32, z: -1.02, sx: 0.12, sy: 0.18, sz: 0.08, cast: false }));
+  body.add(part(G.box, mat(0xb98b5a, { roughness: 0.9 }), { x: 0.75, y: 0.5, z: -0.6, sx: 0.5, sy: 0.4, sz: 0.45, ry: 0.5 }));
+  body.add(part(G.cyl, mat(0x2e8b57, { metalness: 0.3, roughness: 0.1, opacity: 0.85 }), { x: -0.85, y: 1.0, z: 0.4, sx: 0.18, sy: 0.6, sz: 0.18, rz: 0.6 }));
+  body.add(part(G.cyl, mat(0x8a98a3, { metalness: 0.7, roughness: 0.35 }), { x: 0.25, y: 2.25, z: 0.3, sx: 0.3, sy: 0.45, sz: 0.3, rz: 0.4 }));
+  body.add(part(G.cyl, mat(0xffe066, { roughness: 0.6 }), { x: -0.2, y: 2.15, z: -0.4, sx: 0.12, sy: 0.5, sz: 0.12, rz: -0.9, rx: 0.4, cast: false }));
+  body.add(glow(0x9ccc65, 5, 0, 1.4, 0, 0.35));
+  mergeChildren(body);
+  g.add(body);
+  return { group: g, body, legs: [], w: 2.0, l: 1.9 };
+}
+
+// Little hearts that float above a thief while it carries your lives
+export function buildHeartMarker(n) {
+  const g = new THREE.Group();
+  const pink = mat(0xff3d7f, { roughness: 0.3, metalness: 0.2, emissive: 0xff1f5f, emissiveIntensity: 0.9 });
+  for (let i = 0; i < n; i++) {
+    const h = new THREE.Mesh(heartGeo, pink);
+    h.scale.setScalar(0.42);
+    h.position.x = (i - (n - 1) / 2) * 0.55;
+    h.castShadow = false;
+    g.add(h);
+  }
+  g.add(glow(0xff5c9a, 1.6 + n * 0.5, 0, 0, 0, 0.6));
+  return g;
+}
+
+// =====================================================================
 // UFO, asteroid
 // =====================================================================
 export function buildUFO() {

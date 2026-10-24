@@ -27,6 +27,7 @@ const PARAMS = new URLSearchParams(location.search);
 const START_LEVEL = Math.max(1, Math.min(99, parseInt(PARAMS.get('level') || '1', 10) || 1));
 const DEBUG = PARAMS.has('debug');
 const GOD = DEBUG && PARAMS.has('god');   // debug only: never lose lives
+const DEBUG_THIEF = DEBUG ? PARAMS.get('thief') : null;   // debug only: ?thief=raccoon|skunk|monster spawns that thief back to back
 const debugEl = $('debug');
 if (DEBUG) debugEl.classList.remove('hidden');
 
@@ -124,6 +125,7 @@ const particles = new ParticleSystem(360);
 const STATE = { READY: 0, PLAYING: 1, OVER: 2 };
 let state = STATE.READY;
 let score = 0, lives = 3, level = 1, bagsCollected = 0, planetsVisited = 1;
+let stolenOutstanding = 0;   // hearts currently carried off by thieves (shown as 🤍 in the HUD)
 const highScores = { easy: 0, medium: 0, hard: 0 };
 for (const k in highScores) {
   try { highScores[k] = parseInt(localStorage.getItem(HS_KEY + '_' + k) || '0', 10) || 0; } catch (e) { /* ignore */ }
@@ -371,6 +373,70 @@ function spawnHeart() {
   addEntity(e, Models.buildHeart());
 }
 
+// ---- Heart thieves ----
+// They sneak toward the truck, grab hearts on contact and run off down the road
+// with the hearts floating above them. Catch them to get the hearts back.
+const THIEF = {
+  raccoon: { steal: 1, maxVx: 6.0, zig: 2.4, zigAmp: 2.8, markerY: 1.35, spawnX: [9, 13], trigger: [-80, -45], build: () => Models.buildRaccoon(), sound: () => sfx.chitter() },
+  skunk:   { steal: 2, maxVx: 2.8, zig: 1.4, zigAmp: 2.2, markerY: 1.35, spawnX: [8.5, 10.5], trigger: [-125, -90], build: () => Models.buildSkunk(), sound: () => sfx.spray() },
+  monster: { steal: 3, maxVx: 3.2, zig: 1.0, zigAmp: 3.0, markerY: 3.1, spawnX: [9, 11.5], trigger: [-110, -75], build: () => Models.buildTrashMonster(), sound: () => sfx.growl() }
+};
+const THIEF_MIN_Z = -21.5;   // a fleeing thief hovers here: just within reach of a truck pushed fully forward
+function thiefActive() { return entities.some(e => e.type === 'thief'); }
+function spawnThief(kind) {
+  const k = THIEF[kind];
+  const fromLeft = Math.random() < 0.5;
+  const e = {
+    type: 'thief', kind, steal: k.steal, x: (fromLeft ? -1 : 1) * rand(k.spawnX[0], k.spawnX[1]), z: SPAWN_Z,
+    dir: fromLeft ? 1 : -1, vx: 0, triggerZ: rand(k.trigger[0], k.trigger[1]), walking: false, state: 'approach',
+    phase: 0, fleeT: 0, fleeX0: 0, stolen: 0, markers: null, soundT: rand(1, 3)
+  };
+  addEntity(e, k.build());
+  e.group.rotation.y = e.dir > 0 ? -Math.PI / 2 : Math.PI / 2;
+  k.sound();
+}
+function stealHearts(e) {
+  const k = THIEF[e.kind];
+  const n = Math.min(e.steal, lives - 1);   // thieves never take your last heart
+  lives -= n; e.stolen = n; stolenOutstanding += n;
+  e.state = 'flee'; e.fleeT = 0;
+  e.z = Math.max(truck.z - 7, THIEF_MIN_Z);
+  e.fleeX0 = Math.max(-3, Math.min(3, e.x));
+  truck.targetZ = Math.max(truck.targetZ, -4);   // the shove: a truck pushed forward gets bumped back
+  e.markers = Models.buildHeartMarker(n);
+  e.markers.position.y = k.markerY;
+  e.group.add(e.markers);
+  sfx.steal(); k.sound(); shakeCamera(0.4);
+  particles.burst(e.x, 1.2, e.z, 0xff4081, 16, 1.2);
+  spawnFloater(truck.x, 3.4, truck.z, '-' + n + ' ❤️ Stolen!', '#c2185b');
+  if (DEBUG) console.log('hearts stolen by', e.kind, n, 'at', (gameTime / 1000).toFixed(2) + 's');
+  updateUI();
+}
+function recoverHearts(e) {
+  const n = e.stolen;
+  lives = Math.min(diff.maxLives, lives + n); stolenOutstanding -= n; score += 15 * n;
+  e.state = 'caught'; e.stolen = 0;
+  if (e.markers) { e.group.remove(e.markers); e.markers = null; }
+  e.vx = (e.x >= 0 ? 1 : -1) * 12;
+  sfx.heart(); shakeCamera(0.2);
+  particles.burst(e.x, 1.4, e.z, 0xff4081, 26, 1.4);
+  spawnFloater(e.x, 2.6, e.z, '+' + n + ' ❤️ Got them back!', '#ff4081');
+  if (DEBUG) console.log('hearts recovered from', e.kind, n, 'at', (gameTime / 1000).toFixed(2) + 's');
+  updateUI();
+}
+function thiefEscaped(e) {
+  stolenOutstanding -= e.stolen;
+  sfx.escaped();
+  spawnFloater(truck.x, 3.4, truck.z, e.stolen + ' ❤️ gone…', '#7f8c8d');
+  if (DEBUG) console.log(e.kind, 'escaped with', e.stolen, 'at', (gameTime / 1000).toFixed(2) + 's');
+  updateUI();
+}
+function bonkThief(e) {   // only one heart left, nothing to steal: the thief just bounces off
+  e.state = 'caught'; e.vx = (e.x >= 0 ? 1 : -1) * 12;
+  sfx.cluck(); particles.burst(e.x, 1.0, e.z, 0xbdbdbd, 10, 1);
+  spawnFloater(e.x, 2.4, e.z, 'Bonk!', '#7f8c8d');
+}
+
 // ---- Game flow ----
 function applyPlanetVisuals() {
   const planet = getPlanet(level);
@@ -396,12 +462,13 @@ function startGame() {
   paused = false;
   pauseScreen.classList.add('hidden');
   score = 0; lives = diff.lives; level = START_LEVEL; bagsCollected = 0; planetsVisited = START_LEVEL;
+  stolenOutstanding = 0;
   clearEntities();
   particles.list.length = 0;
   invulnTimer = 0; cameraShake = 0;
   baseSpeed = diff.baseSpeed + START_LEVEL * diff.speedPerLevel; speed = baseSpeed;
   gameTime = (START_LEVEL - 1) * diff.levelDuration;
-  spawnTimer = { car: 0, person: 1500, dog: 3000, asteroid: 0, garbage: 0, star: 8000, chicken: 4000, frog: 2500, alien: 2000, ufo: 3000, heart: 12000 };
+  spawnTimer = { car: 0, person: 1500, dog: 3000, asteroid: 0, garbage: 0, star: 8000, chicken: 4000, frog: 2500, alien: 2000, ufo: 3000, heart: 12000, raccoon: 5000, skunk: 0, monster: 0 };
   truck.x = 2.5; truck.z = -4; truck.targetX = truck.x; truck.targetZ = truck.z; truck.vx = 0; truck.yaw = 0;
   truckModel.group.visible = true;
   applyPlanetVisuals();
@@ -443,7 +510,7 @@ function endGame() {
 
 function updateUI() {
   scoreEl.textContent = score;
-  livesEl.textContent = '❤️'.repeat(Math.max(0, lives)) || '0';
+  livesEl.textContent = ('❤️'.repeat(Math.max(0, lives)) + '🤍'.repeat(Math.max(0, stolenOutstanding))) || '0';
   levelNumEl.textContent = level;
 }
 function updatePlanetUI() {
@@ -556,6 +623,14 @@ function update(dt) {
   if (spawnTimer.garbage >= rand(700, 1300) * pk) { spawnTimer.garbage = 0; spawnGarbage(); }
   if (spawnTimer.star >= rand(9000, 14000) * pk) { spawnTimer.star = 0; spawnStar(); }
   if (spawnTimer.heart >= rand(15000, 22000) * diff.heartRate) { spawnTimer.heart = 0; spawnHeart(); }
+  if (DEBUG_THIEF && THIEF[DEBUG_THIEF]) {
+    if (!thiefActive()) spawnThief(DEBUG_THIEF);
+  } else if (!thiefActive()) {   // one thief at a time keeps the chase readable
+    const tr = diff.thiefRate;
+    if (spawnTimer.raccoon >= rand(14000, 22000) * tr) { spawnTimer.raccoon = 0; spawnThief('raccoon'); }
+    else if (spawnTimer.skunk >= rand(18000, 28000) * tr) { spawnTimer.skunk = 0; spawnThief('skunk'); }
+    else if (level >= diff.monsterMinLevel && spawnTimer.monster >= rand(30000, 45000) * tr) { spawnTimer.monster = 0; spawnThief('monster'); }
+  }
 
   if (invulnTimer > 0) invulnTimer -= dt * 1000;
 
@@ -600,6 +675,57 @@ function update(dt) {
       }
       e.group.position.set(e.x, 0, e.z);
       if (e.z > DESPAWN_Z) removeEntityAt(i);
+      continue;
+    }
+
+    if (e.type === 'thief') {
+      const k = THIEF[e.kind];
+      const legsRun = (rate, amp) => {
+        e.phase += dt * rate;
+        const a = Math.sin(e.phase) * amp;
+        if (m.legs.length === 4) { m.legs[0].rotation.x = a; m.legs[3].rotation.x = a; m.legs[1].rotation.x = -a; m.legs[2].rotation.x = -a; }
+      };
+      if (e.state === 'approach') {
+        e.z += (speed + (e.kind === 'monster' ? 2.5 : 0)) * dt;
+        if (!e.walking && e.z >= e.triggerZ) e.walking = true;
+        if (e.walking) {
+          const maxVx = k.maxVx * diff.crosserSpeed;
+          const dx = truck.x - e.x;
+          if (e.z < truck.z + 2) e.vx = Math.abs(dx) < 0.25 ? 0 : Math.sign(dx) * Math.min(maxVx, Math.abs(dx) * 4);  // home in on our lane
+          else e.vx = e.dir * maxVx;                                                                                // missed us: keep crossing
+          e.x += e.vx * dt;
+          e.group.rotation.y = e.vx > 0.3 ? -Math.PI / 2 : e.vx < -0.3 ? Math.PI / 2 : Math.PI;
+          if (Math.abs(e.vx) > 0.3 || e.kind === 'monster') legsRun(e.kind === 'skunk' ? 9 : 16, 0.8);
+        }
+        e.soundT -= dt;
+        if (e.soundT <= 0) { e.soundT = rand(2.5, 5); if (e.z > -70) k.sound(); }
+        if (e.kind === 'skunk' && m.tail) m.tail.rotation.x = -1.1 + Math.sin(t * 3) * 0.15;
+        if (invulnTimer <= 0 && overlapsTruck(e)) {
+          if (lives > 1) stealHearts(e); else bonkThief(e);
+        }
+      } else if (e.state === 'flee') {
+        e.fleeT += dt;
+        const escaping = e.fleeT > diff.chaseTime;
+        e.z -= (escaping ? 28 : diff.thiefRecede) * dt;
+        if (!escaping && e.z < THIEF_MIN_Z) e.z = THIEF_MIN_Z;
+        e.x = Math.max(-4.3, Math.min(4.3, e.fleeX0 + Math.sin(e.fleeT * k.zig) * k.zigAmp));
+        e.group.rotation.y = -Math.cos(e.fleeT * k.zig) * 0.7;   // facing away, leaning into the zig-zag
+        legsRun(e.kind === 'skunk' ? 12 : 20, 0.9);
+        if (e.markers) { e.markers.position.y = k.markerY + Math.sin(t * 5) * 0.12; e.markers.rotation.y = t * 2.5; }
+        if (e.z < truck.z - 80) { thiefEscaped(e); removeEntityAt(i); continue; }
+        if (e.fleeT > 0.8 && overlapsTruck(e, 1.1)) recoverHearts(e);   // short grace so the shove plays out first
+      } else {   // caught or bonked: scurry off sideways
+        e.z += speed * dt;
+        e.x += e.vx * dt;
+        e.group.rotation.y = e.vx > 0 ? -Math.PI / 2 : Math.PI / 2;
+        legsRun(20, 0.9);
+      }
+      if (e.kind === 'monster') {
+        const bob = Math.abs(Math.sin(e.phase * 0.5));
+        m.body.position.y = bob * 0.18; m.body.scale.set(1 + bob * 0.04, 1 - bob * 0.06, 1 + bob * 0.04);
+      }
+      e.group.position.set(e.x, 0, e.z);
+      if (e.state !== 'flee' && (Math.abs(e.x) > 30 || e.z > DESPAWN_Z)) { removeEntityAt(i); continue; }
       continue;
     }
 
@@ -800,6 +926,22 @@ camera.position.copy(camPos);
 camera.lookAt(0, 1.3, -22);
 // a ?mode= link also becomes the remembered choice, so a parent can set it up once
 selectDifficulty(diff.key, PARAMS.get('mode') in DIFFICULTIES);
+if (DEBUG) {
+  // Test hook: step the simulation synchronously (independent of requestAnimationFrame)
+  window.__ctg = {
+    start: () => startGame(),
+    press: (key, down = true) => { keys[key] = down; },
+    step: (ms, stepMs = 16) => {
+      resumeGame();
+      for (let left = ms; left > 0; left -= stepMs) update(Math.min(left, stepMs) / 1000);
+      renderer.render(scene, camera);
+    },
+    snapshot: () => ({
+      state, lives, score, stolenOutstanding, level, invuln: Math.round(invulnTimer), truck: { x: +truck.x.toFixed(2), z: +truck.z.toFixed(2) },
+      entities: entities.map(e => ({ type: e.type, kind: e.kind, state: e.state, stolen: e.stolen, x: +e.x.toFixed(1), z: +e.z.toFixed(1) }))
+    })
+  };
+}
 startBtn.disabled = false;
 startBtn.textContent = '▶ Blast Off!';
 requestAnimationFrame(loop);

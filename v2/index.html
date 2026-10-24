@@ -180,6 +180,12 @@
   @media (max-width: 440px) {
     .legend { grid-template-columns: 1fr 1fr; }
   }
+  @media (min-width: 520px) {
+    .legend:not(.thieves) { grid-template-columns: repeat(4, 1fr); }
+  }
+  .legend.thieves { margin-top: 2px; }
+  .thieves-label { margin: 6px 0 0; }
+  .thief { color: #6a1b9a; background: #f3e5f5 !important; }
   .good { color: #27ae60; }
   .bad { color: #c0392b; }
   .pick-label { margin-top: 6px; margin-bottom: 2px; }
@@ -419,7 +425,7 @@
     <div class="card">
       <span class="big-emoji">🚛🌍🪐</span>
       <h1>Catch the Garbage! <span class="tag">3D</span></h1>
-      <p>Drive your trash truck through the neighborhood and pick up garbage! Each level takes you to a new planet — even the Moon, Mars, and Saturn!</p>
+      <p>Drive your trash truck, pick up the garbage, and visit a new planet every level — even the Moon, Mars, and Saturn!</p>
       <div class="legend">
         <div class="good">🗑️ Trash = +10</div>
         <div class="good">⭐ Star = +50</div>
@@ -432,6 +438,12 @@
         <div class="bad">👽 Aliens</div>
         <div class="bad">🛸 UFOs</div>
         <div class="bad">☄️ Asteroids</div>
+      </div>
+      <p class="thieves-label"><b>Heart thieves!</b> Chase them down to get your hearts back.</p>
+      <div class="legend thieves">
+        <div class="thief">🦝 Raccoon: 1 ❤️</div>
+        <div class="thief">🦨 Skunk: 2 ❤️</div>
+        <div class="thief">🗑️ Trash Monster: 3 ❤️</div>
       </div>
       <p><b>Steer:</b> ← → arrows · <b>Speed up / slow down:</b> ↑ ↓ · or tap where you want to go</p>
       <p class="pick-label"><b>Pick your route:</b></p>
